@@ -1,0 +1,56 @@
+name: CD
+
+on: [
+  workflow_call,
+  workflow_dispatch
+]
+
+env:
+  APP_VERSION: latest
+  APP_NAME: ${{ github.event.repository.name }}
+  APP_OWNER: ${{ github.repository_owner }}
+
+jobs:
+  Export-Package:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: 'Checkout to current branch'
+        uses: actions/checkout@v3
+      - name: 'Build library package'
+        run: echo "TODO..."
+      - name: 'Uploading library artifacts'
+        uses: actions/upload-artifact@v3
+        with:
+          name: library-artifacts
+          path: ./build/library
+
+  Publish-Package:
+    needs: Export-Package
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-22.04
+    steps:
+      - name: 'Downloading library artifacts'
+        uses: actions/download-artifact@v3
+        with:
+          name: library-artifacts
+      - name: 'Log in to Python Package Index (PyPI)'
+        run: echo "TODO..."
+      - name: 'Pushing library package to Python Package Index (PyPI)'
+        run: |
+          echo "TODO..."
+
+  Update-Documentation:
+    needs: Publish-Package
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-22.04
+    steps:
+      - name: 'Updating release version in README.md'
+        run: echo "TODO..."
+
+  Create-Release:
+    needs: Update-Documentation
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-22.04
+    steps:
+      - name: 'Creating release'
+        run: echo "TODO..."
