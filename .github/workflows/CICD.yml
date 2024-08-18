@@ -1,0 +1,16 @@
+name: CICD
+
+on:
+  pull_request:
+    types: [ opened, synchronize, edited ]
+    paths-ignore:
+      - '**.md'
+
+jobs:
+  CI:
+    uses: ./.github/workflows/ci-workflow.yml
+    secrets: inherit
+  CD:
+    needs: [CI]
+    uses: ./.github/workflows/cd-workflow.yml
+    secrets: inherit
