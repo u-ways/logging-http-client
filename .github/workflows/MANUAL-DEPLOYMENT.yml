@@ -18,12 +18,12 @@ on:
         default: 'test-pypi'
         options:
           - 'test-pypi'
-          - 'pypi'
+          - 'prod-pypi'
 
 env:
   TARGET: ${{ inputs.target }}
-  PROD_PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
-  TEST_PYPI_API_TOKEN: ${{ secrets.TESTPYPI_API_TOKEN }}
+  PROD_PYPI_API_TOKEN: ${{ secrets.PROD_PYPI_API_TOKEN }}
+  TEST_PYPI_API_TOKEN: ${{ secrets.TEST_PYPI_API_TOKEN }}
 
 jobs:
   Manual-Deployment:
@@ -37,8 +37,8 @@ jobs:
         run: make build-python-package-docker
       - name: 'Publishing to Targeted PyPI'
         run: |
-          TARGET_PYPI_API_TOKEN=$(if [ "${{ inputs.target }}" = "test-pypi" ]; then echo "$TEST_PYPI_API_TOKEN"; else echo "$PROD_PYPI_API_TOKEN"; fi)
-          make publish-to-pypi-docker TARGET="${{ inputs.target }}" PYPI_API_TOKEN=$TARGET_PYPI_API_TOKEN
+          TARGET_PYPI_API_TOKEN=$(if [ "${TARGET}" = "test-pypi" ]; then echo "${TEST_PYPI_API_TOKEN}"; else echo "${PROD_PYPI_API_TOKEN}"; fi)
+          make publish-to-pypi-docker TARGET="${TARGET}" PYPI_API_TOKEN="${TARGET_PYPI_API_TOKEN}"
       - name: 'Uploading published package artifacts'
         uses: actions/upload-artifact@v3
         with:

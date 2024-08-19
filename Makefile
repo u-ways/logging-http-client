@@ -167,7 +167,10 @@ publish-to-pypi-docker: require-docker
 	@test -n "$(TARGET)" || (echo "TARGET is not set. Please set the target repository." && exit 1)
 	@test -n "$(PYPI_API_TOKEN)" || (echo "PYPI_API_TOKEN is not set. Please set the PyPI API token." && exit 1)
 	@$(call build_docker_image,development)
-	@$(call run_docker_dev_mount,poetry publish -r $(TARGET) --build --username __token__ --password $(PYPI_API_TOKEN))
+	@$(call run_docker_dev_mount, /bin/bash -c "\
+		poetry config repositories.prod-pypi https://upload.pypi.org/legacy/ && \
+		poetry config repositories.test-pypi https://test.pypi.org/legacy/ && \
+		poetry publish -r $(TARGET) --username __token__ --password $(PYPI_API_TOKEN)")
 
 # Functions ####################################################################################
 
