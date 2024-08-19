@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "logging-http-client"
-version = "0.0.0"
+version = "2.32.3.0"
 description = "A logging library built on top of the requests library to provide a familiar interface for sending HTTP requests."
 authors = ["u-ways <work@u-ways.info>"]
 packages = [{ include = "logging_http_client", from = "." }]
@@ -42,6 +42,7 @@ pytest = "^8.1.1"
 pytest-mock = "^3.14.0"
 pytest-env = "^1.1.3"
 testcontainers = "^4.7.1"
+wiremock= "^2.6.1"
 
 [tool.black]
 line-length = 120
