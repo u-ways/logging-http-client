@@ -155,6 +155,20 @@ check-code-quality-docker: require-docker
 	@$(MAKE) check-lint-docker
 	@$(MAKE) check-test-docker
 
+.PHONY: build-python-package-docker
+build-python-package-docker: require-docker
+	@echo "Building Python package... (Containerised)"
+	@$(call build_docker_image,development)
+	@$(call run_docker_dev_mount,poetry build)
+
+.PHONY: publish-to-pypi-docker
+publish-to-pypi-docker: require-docker
+	@echo "Publishing Python package to $(TARGET)... (Containerised)"
+	@test -n "$(TARGET)" || (echo "TARGET is not set. Please set the target repository." && exit 1)
+	@test -n "$(PYPI_API_TOKEN)" || (echo "PYPI_API_TOKEN is not set. Please set the PyPI API token." && exit 1)
+	@$(call build_docker_image,development)
+	@$(call run_docker_dev_mount,poetry publish -r $(TARGET) --build --username __token__ --password $(PYPI_API_TOKEN))
+
 # Functions ####################################################################################
 
 define build_docker_image
@@ -170,5 +184,8 @@ define run_docker_dev_mount
 		-v $(PROJECT_ROOT)/tests:/app/tests \
 		-v $(PROJECT_ROOT)/pyproject.toml:/app/pyproject.toml \
 		-v $(PROJECT_ROOT)/poetry.lock:/app/poetry.lock \
+		-v $(PROJECT_ROOT)/README.md:/app/README.md \
+		-v $(PROJECT_ROOT)/LICENSE:/app/LICENSE \
+		-v $(PROJECT_ROOT)/dist:/app/dist \
 		--rm --name $(APP_NAME)-toolchain-dev $(IMAGE_ID) $(1)
 endef

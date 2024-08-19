@@ -1,0 +1,46 @@
+# NOTE:
+#  Unlike the cd-workflow.yml, this workflow can only be manually triggered
+#  and will not create a new release tag. Therefore, if you want to deploy
+#  a new release, you MUST first create a new release tag in the git repository.
+#
+# USECASE:
+#  - If you want to manually release the package to the Python Production or Test Package Index (PyPI)
+#  - If a release tag already exists, but you want to re-deploy the same version because of a failed deployment.
+name: MANUAL-DEPLOYMENT
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        type: choice
+        required: true
+        description: 'Which environment do you want to deploy the package to?'
+        default: 'test-pypi'
+        options:
+          - 'test-pypi'
+          - 'pypi'
+
+env:
+  TARGET: ${{ inputs.target }}
+  PROD_PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+  TEST_PYPI_API_TOKEN: ${{ secrets.TESTPYPI_API_TOKEN }}
+
+jobs:
+  Manual-Deployment:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: 'Checkout to current branch'
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: 'Building the package'
+        run: make build-python-package-docker
+      - name: 'Publishing to Targeted PyPI'
+        run: |
+          TARGET_PYPI_API_TOKEN=$(if [ "${{ inputs.target }}" = "test-pypi" ]; then echo "$TEST_PYPI_API_TOKEN"; else echo "$PROD_PYPI_API_TOKEN"; fi)
+          make publish-to-pypi-docker TARGET="${{ inputs.target }}" PYPI_API_TOKEN=$TARGET_PYPI_API_TOKEN
+      - name: 'Uploading published package artifacts'
+        uses: actions/upload-artifact@v3
+        with:
+          name: python-package-artifacts
+          path: ./dist
