@@ -9,6 +9,22 @@
 A logging library built on top of the [requests](https://pypi.org/project/requests/) library to provide a familiar
 interface for sending HTTP requests with observability features out-of-the-box.
 
+## Table of Contents
+
+- [Background](#background)
+- [Usage](#usage)
+  - [1. Drop-in Replacement for requests](#1-drop-in-replacement-for-requests)
+  - [2. Using the HTTP Client with reusable Sessions](#2-using-the-http-client-with-reusable-sessions)
+    - [i. Disabling Reusable Sessions For The HTTP Client](#i-disabling-reusable-sessions-for-the-http-client)
+    - [ii. Adding Shared Headers to the HTTP Client](#ii-adding-shared-headers-to-the-http-client)
+    - [iii. Setting the client's `x-source`](#iii-setting-the-clients-x-source)
+    - [iii. `x-request-id` is automatically set](#iii-x-request-id-is-automatically-set)
+- [HTTP Log Record Structure](#http-log-record-structure)
+- [Contributing](#contributing)
+  - [Prerequisites](#prerequisites)
+  - [Environment Setup](#environment-setup)
+  - [Code Quality](#code-quality)
+
 ## Background
 
 The requests library is a popular library for sending HTTP requests in Python. However, it does not provide adequate
@@ -121,8 +137,58 @@ root_logger.setLevel(level=logging.INFO)
 client = logging_http_client.create(source="my-system-name", logger=root_logger)
 
 response = client.get('https://www.python.org')
-# => Log record will include: { request_source: "my-system-name", ... }
+# => Log record will include: 
+#    { http { request_source: "my-system-name", ... } }
 ```
+
+#### iii. `x-request-id` is automatically set
+
+The library automatically sets a `x-request-id` header on the request, and is logged within the response as well. The
+`x-request-id` is a UUID that is generated for each request, and it's attached on both the request and the response 
+logs.
+
+```python
+import logging
+
+import logging_http_client
+
+root_logger = logging.getLogger()
+root_logger.setLevel(level=logging.INFO)
+
+client = logging_http_client.create(source="my-system-name", logger=root_logger)
+
+response = client.get('https://www.python.org')
+# => Both request and response log records will include: 
+#    { http { request_id: "<uuid>", ... } }
+# => The reqeust log record will also attach it as a header: 
+#    { http { request_headers: { "x-request-id": "<uuid>", ... }, ... } }
+```
+
+## HTTP Log Record Structure
+
+The library logs HTTP requests and responses as structured log records. The log records are structured as JSON 
+object passed to the logger's `extra` keyword argument. The log records are structured as follows:
+
+```json
+{
+  "http": {
+    "request_id": "<uuid>",
+    "request_source": "<source>",
+    "request_method": "<method>",
+    "request_url": "<url>",
+    "request_query_params": "<query_params>",
+    "request_headers": "<headers>",
+    "request_body": "<body>",
+    "response_status": "<status>",
+    "response_headers": "<headers>",
+    "response_duration_ms": "<duration>",
+    "response_body": "<body>"
+  }
+}
+```
+
+If any of those top-level fields are `None`, `{}`, `[]`, `""`, `0`, or `0.0`, 
+they will be omitted from the log record for brevity purposes.
 
 ## Contributing
 
