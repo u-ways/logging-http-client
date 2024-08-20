@@ -2,6 +2,7 @@ import logging
 from logging import LogRecord
 
 import pytest
+from requests import PreparedRequest, Response
 from wiremock.resources.mappings import HttpMethods
 
 import logging_http_client
@@ -101,8 +102,8 @@ def test_client_should_log_request_with_body_logging_enabled(wiremock_server, ca
 
 
 def test_client_should_log_with_logging_disabled(wiremock_server, caplog):
-    logging_http_client_config.enable_request_logging(enable=False)
-    logging_http_client_config.enable_response_logging(enable=False)
+    logging_http_client_config.disable_request_logging(disabled=True)
+    logging_http_client_config.disable_response_logging(disabled=True)
 
     wiremock_server.for_endpoint("/secret")
 
@@ -114,3 +115,47 @@ def test_client_should_log_with_logging_disabled(wiremock_server, caplog):
     relevant_logs = [record for record in caplog.records if record.message in ["REQUEST", "RESPONSE"]]
 
     assert len(relevant_logs) == 0, f"Expected 0 logs, found {len(relevant_logs)}"
+
+
+def test_client_should_log_with_custom_request_logging_hook(wiremock_server, caplog):
+    def custom_request_logging_hook(logger: logging.Logger, request: PreparedRequest):
+        logger.debug("Custom request logging for %s", request.url)
+
+    logging_http_client_config.set_custom_request_logging_hook(custom_request_logging_hook)
+
+    wiremock_server.for_endpoint("/custom")
+
+    with caplog.at_level(logging.DEBUG):
+        logging_http_client.create().get(
+            url=wiremock_server.get_url("/custom"),
+        )
+
+    relevant_logs = [record for record in caplog.records if "Custom request logging" in record.message]
+
+    assert len(relevant_logs) == 1, f"Expected 1 request log, found {len(relevant_logs)}"
+
+    request_log: LogRecord = relevant_logs.pop()
+
+    assert request_log.message == "Custom request logging for " + wiremock_server.get_url("/custom")
+
+
+def test_client_should_log_with_custom_response_logging_hook(wiremock_server, caplog):
+    def custom_response_logging_hook(logger: logging.Logger, response: Response):
+        logger.debug("Custom response logging for %s", response.url)
+
+    logging_http_client_config.set_custom_response_logging_hook(custom_response_logging_hook)
+
+    wiremock_server.for_endpoint("/custom")
+
+    with caplog.at_level(logging.DEBUG):
+        logging_http_client.create().get(
+            url=wiremock_server.get_url("/custom"),
+        )
+
+    relevant_logs = [record for record in caplog.records if "Custom response logging" in record.message]
+
+    assert len(relevant_logs) == 1, f"Expected 1 response log, found {len(relevant_logs)}"
+
+    response_log: LogRecord = relevant_logs.pop()
+
+    assert response_log.message == "Custom response logging for " + wiremock_server.get_url("/custom")

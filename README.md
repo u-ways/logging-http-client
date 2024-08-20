@@ -13,17 +13,23 @@ interface for sending HTTP requests with observability features out-of-the-box.
 
 - [Background](#background)
 - [Usage](#usage)
-  - [1. Drop-in Replacement for requests](#1-drop-in-replacement-for-requests)
-  - [2. Using the HTTP Client with reusable Sessions](#2-using-the-http-client-with-reusable-sessions)
-    - [i. Disabling Reusable Sessions For The HTTP Client](#i-disabling-reusable-sessions-for-the-http-client)
-    - [ii. Adding Shared Headers to the HTTP Client](#ii-adding-shared-headers-to-the-http-client)
-    - [iii. Setting the client's `x-source`](#iii-setting-the-clients-x-source)
-    - [iii. `x-request-id` is automatically set](#iii-x-request-id-is-automatically-set)
+    - [1. Drop-in Replacement for requests](#1-drop-in-replacement-for-requests)
+    - [2. Using the HTTP Client with reusable Sessions](#2-using-the-http-client-with-reusable-sessions)
+        - [i. Disabling Reusable Sessions For The HTTP Client](#i-disabling-reusable-sessions-for-the-http-client)
+        - [ii. Adding Shared Headers to the HTTP Client](#ii-adding-shared-headers-to-the-http-client)
+        - [iii. Setting the client's `x-source`](#iii-setting-the-clients-x-source)
+        - [iii. `x-request-id` is automatically set](#iii-x-request-id-is-automatically-set)
+    - [3. Custom Logging Hooks](#3-custom-logging-hooks)
+        - [i. Request Logging Hook](#i-request-logging-hook)
+        - [ii. Response Logging Hook](#ii-response-logging-hook)
+    - [4. Default Logging Configurations](#4-default-logging-configurations)
+        - [i. Disabling Request or Response Logging](#i-disabling-request-or-response-logging)
+        - [ii. Enabling Request or Response Body Logging](#ii-enabling-request-or-response-body-logging)
 - [HTTP Log Record Structure](#http-log-record-structure)
 - [Contributing](#contributing)
-  - [Prerequisites](#prerequisites)
-  - [Environment Setup](#environment-setup)
-  - [Code Quality](#code-quality)
+    - [Prerequisites](#prerequisites)
+    - [Environment Setup](#environment-setup)
+    - [Code Quality](#code-quality)
 
 ## Background
 
@@ -122,8 +128,8 @@ del client.shared_headers
 
 #### iii. Setting the client's `x-source`
 
-It's common to set a `x-source` header to identify the source of the request. 
-You can set this header on the client by passing the `soruce` argument to the 
+It's common to set a `x-source` header to identify the source of the request.
+You can set this header on the client by passing the `soruce` argument to the
 `create` method.
 
 ```python
@@ -144,7 +150,7 @@ response = client.get('https://www.python.org')
 #### iii. `x-request-id` is automatically set
 
 The library automatically sets a `x-request-id` header on the request, and is logged within the response as well. The
-`x-request-id` is a UUID that is generated for each request, and it's attached on both the request and the response 
+`x-request-id` is a UUID that is generated for each request, and it's attached on both the request and the response
 logs.
 
 ```python
@@ -164,9 +170,106 @@ response = client.get('https://www.python.org')
 #    { http { request_headers: { "x-request-id": "<uuid>", ... }, ... } }
 ```
 
+### 3. Custom Logging Hooks
+
+The library provides a way to attach custom logging hooks at the global level. They're intended to REPLACE the
+default logging behaviour with your own logging logic. Here is how you can apply:
+
+#### i. Request Logging Hook
+
+The request logging hook is called **before** the request is sent. It gives you access to the client logger, and
+the [prepared request](https://requests.readthedocs.io/en/latest/user/advanced/#prepared-requests) object. You can
+use this hook to log the request before it's sent.
+
+```python
+import logging
+
+from requests import PreparedRequest
+
+import logging_http_client
+import logging_http_client_config
+
+
+def custom_request_logging_hook(logger: logging.Logger, request: PreparedRequest):
+    logger.debug("Custom request logging for %s", request.url)
+
+
+logging_http_client_config.set_custom_request_logging_hook(custom_request_logging_hook)
+
+logging_http_client.create().get('https://www.python.org')
+
+# => Log record will include:
+#    { message { "Custom request logging for https://www.python.org" } }
+```
+
+#### ii. Response Logging Hook
+
+The response logging hook is called **after** the response is received. It gives you access to the client logger, and
+the [response object](https://requests.readthedocs.io/en/latest/api/#requests.Response). You can use this hook to log
+the response after it's received.
+
+```python
+import logging
+
+from requests import Response
+
+import logging_http_client
+import logging_http_client_config
+
+
+def custom_response_logging_hook(logger: logging.Logger, response: Response):
+    logger.debug("Custom response logging for %s", response.url)
+
+
+logging_http_client_config.set_custom_response_logging_hook(custom_response_logging_hook)
+
+logging_http_client.create().get('https://www.python.org')
+
+# => Log record will include:
+#    { message { "Custom response logging for https://www.python.org" } }
+```
+
+### 4. Default Logging Configurations
+
+The default logging comes with a set of configurations that can be customised to suit your needs.
+
+#### i. Disabling Request or Response Logging
+
+You can disable request or response logging by calling the `disable_request_logging` or `disable_response_logging`
+methods respectively. This will prevent the library from generating log records for requests or responses UNLESS you
+have custom logging hooks set.
+
+```python
+import logging_http_client
+import logging_http_client_config
+
+logging_http_client_config.disable_request_logging()
+logging_http_client_config.disable_response_logging()
+
+logging_http_client.create().get('https://www.python.org')
+# => No request log record will be generated
+# => No response log record will be generated
+```
+
+#### ii. Enabling Request or Response Body Logging
+
+By default, the library does not log the request or response body. You can enable this by calling the `enable_request_body_logging`
+or `enable_response_body_logging` methods respectively. This will log the request or response body in the log record.
+
+```python
+import logging_http_client
+import logging_http_client_config
+
+logging_http_client_config.enable_request_body_logging()
+logging_http_client_config.enable_response_body_logging()
+
+logging_http_client.create().get('https://www.python.org')
+# => Log record will include the request or response body (if present)
+```
+
 ## HTTP Log Record Structure
 
-The library logs HTTP requests and responses as structured log records. The log records are structured as JSON 
+The library logs HTTP requests and responses as structured log records. The log records are structured as JSON
 object passed to the logger's `extra` keyword argument. The log records are structured as follows:
 
 ```json
@@ -187,7 +290,7 @@ object passed to the logger's `extra` keyword argument. The log records are stru
 }
 ```
 
-If any of those top-level fields are `None`, `{}`, `[]`, `""`, `0`, or `0.0`, 
+If any of those top-level fields are `None`, `{}`, `[]`, `""`, `0`, or `0.0`,
 they will be omitted from the log record for brevity purposes.
 
 ## Contributing
