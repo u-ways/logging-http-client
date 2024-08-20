@@ -36,8 +36,8 @@ def reset_library_globals_after_each_test():
     logging_http_client_config.set_custom_request_logging_hook(None)
     logging_http_client_config.set_custom_response_logging_hook(None)
 
-    logging_http_client_config.enable_request_logging(True)
+    logging_http_client_config.disable_request_logging(False)
     logging_http_client_config.enable_request_body_logging(False)
 
-    logging_http_client_config.enable_response_logging(True)
+    logging_http_client_config.disable_response_logging(False)
     logging_http_client_config.enable_response_body_logging(False)

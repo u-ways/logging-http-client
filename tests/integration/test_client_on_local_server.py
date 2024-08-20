@@ -102,8 +102,8 @@ def test_client_should_log_request_with_body_logging_enabled(wiremock_server, ca
 
 
 def test_client_should_log_with_logging_disabled(wiremock_server, caplog):
-    logging_http_client_config.enable_request_logging(enable=False)
-    logging_http_client_config.enable_response_logging(enable=False)
+    logging_http_client_config.disable_request_logging(disabled=True)
+    logging_http_client_config.disable_response_logging(disabled=True)
 
     wiremock_server.for_endpoint("/secret")
 

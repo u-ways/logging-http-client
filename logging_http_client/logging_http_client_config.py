@@ -64,7 +64,7 @@ def is_response_body_logging_enabled() -> bool:
     return _response_body_logging_enabled
 
 
-def enable_request_logging(enable: bool = True) -> None:
+def disable_request_logging(disabled: bool = True) -> None:
     """
     Enable or disable request logging.
 
@@ -73,10 +73,10 @@ def enable_request_logging(enable: bool = True) -> None:
         these are for modifying the default logging setup)
     """
     global _request_logging_enabled
-    _request_logging_enabled = enable
+    _request_logging_enabled = not disabled
 
 
-def enable_response_logging(enable: bool = True) -> None:
+def disable_response_logging(disabled: bool = True) -> None:
     """
     Enable or disable response logging.
 
@@ -85,7 +85,7 @@ def enable_response_logging(enable: bool = True) -> None:
         these are for modifying the default logging setup)
     """
     global _response_logging_enabled
-    _response_logging_enabled = enable
+    _response_logging_enabled = not disabled
 
 
 def enable_request_body_logging(enable: bool = True) -> None:

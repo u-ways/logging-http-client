@@ -22,6 +22,9 @@ interface for sending HTTP requests with observability features out-of-the-box.
     - [3. Custom Logging Hooks](#3-custom-logging-hooks)
         - [i. Request Logging Hook](#i-request-logging-hook)
         - [ii. Response Logging Hook](#ii-response-logging-hook)
+    - [4. Default Logging Configurations](#4-default-logging-configurations)
+        - [i. Disabling Request or Response Logging](#i-disabling-request-or-response-logging)
+        - [ii. Enabling Request or Response Body Logging](#ii-enabling-request-or-response-body-logging)
 - [HTTP Log Record Structure](#http-log-record-structure)
 - [Contributing](#contributing)
     - [Prerequisites](#prerequisites)
@@ -201,8 +204,8 @@ logging_http_client.create().get('https://www.python.org')
 
 #### ii. Response Logging Hook
 
-The response logging hook is called **after** the response is received. It gives you access to the client logger, and 
-the [response object](https://requests.readthedocs.io/en/latest/api/#requests.Response). You can use this hook to log 
+The response logging hook is called **after** the response is received. It gives you access to the client logger, and
+the [response object](https://requests.readthedocs.io/en/latest/api/#requests.Response). You can use this hook to log
 the response after it's received.
 
 ```python
@@ -224,6 +227,44 @@ logging_http_client.create().get('https://www.python.org')
 
 # => Log record will include:
 #    { message { "Custom response logging for https://www.python.org" } }
+```
+
+### 4. Default Logging Configurations
+
+The default logging comes with a set of configurations that can be customised to suit your needs.
+
+#### i. Disabling Request or Response Logging
+
+You can disable request or response logging by calling the `disable_request_logging` or `disable_response_logging`
+methods respectively. This will prevent the library from generating log records for requests or responses UNLESS you
+have custom logging hooks set.
+
+```python
+import logging_http_client
+import logging_http_client_config
+
+logging_http_client_config.disable_request_logging()
+logging_http_client_config.disable_response_logging()
+
+logging_http_client.create().get('https://www.python.org')
+# => No request log record will be generated
+# => No response log record will be generated
+```
+
+#### ii. Enabling Request or Response Body Logging
+
+By default, the library does not log the request or response body. You can enable this by calling the `enable_request_body_logging`
+or `enable_response_body_logging` methods respectively. This will log the request or response body in the log record.
+
+```python
+import logging_http_client
+import logging_http_client_config
+
+logging_http_client_config.enable_request_body_logging()
+logging_http_client_config.enable_response_body_logging()
+
+logging_http_client.create().get('https://www.python.org')
+# => Log record will include the request or response body (if present)
 ```
 
 ## HTTP Log Record Structure
