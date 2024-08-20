@@ -129,7 +129,7 @@ del client.shared_headers
 #### iii. Setting the client's `x-source`
 
 It's common to set a `x-source` header to identify the source of the request.
-You can set this header on the client by passing the `soruce` argument to the
+You can set this header on the client by passing the `source` argument to the
 `create` method.
 
 ```python
