@@ -59,7 +59,7 @@ class LoggingSession(Session):
 
             request_logging_hook = get_custom_request_logging_hook()
             if request_logging_hook is not None:
-                request_logging_hook(prepared)
+                request_logging_hook(logger, prepared)
             else:
                 if is_request_logging_enabled():
                     logger.info(
@@ -74,7 +74,7 @@ class LoggingSession(Session):
 
             response_logging_hook = get_custom_response_logging_hook()
             if response_logging_hook is not None:
-                response_logging_hook(response)
+                response_logging_hook(logger, response)
             else:
                 if is_response_logging_enabled():
                     logger.info(

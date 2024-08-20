@@ -1,3 +1,4 @@
+import logging
 from typing import Optional, Callable
 
 from requests import Response, PreparedRequest
@@ -8,8 +9,8 @@ _response_logging_enabled: bool = True
 _request_body_logging_enabled: bool = False
 _response_body_logging_enabled: bool = False
 
-ResponseHookType = Optional[Callable[[Response], None]]
-RequestHookType = Optional[Callable[[PreparedRequest], None]]
+ResponseHookType = Optional[Callable[[logging.Logger, Response], None]]
+RequestHookType = Optional[Callable[[logging.Logger, PreparedRequest], None]]
 
 _request_logging_hook: RequestHookType = None
 _response_logging_hook: ResponseHookType = None
