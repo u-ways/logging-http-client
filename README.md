@@ -19,6 +19,7 @@ interface for sending HTTP requests with observability features out-of-the-box.
         - [ii. Adding Shared Headers to the HTTP Client](#ii-adding-shared-headers-to-the-http-client)
         - [iii. Setting the client's `x-source`](#iii-setting-the-clients-x-source)
         - [iii. `x-request-id` is automatically set](#iii-x-request-id-is-automatically-set)
+        - [iv. `x-correlation-id` can be automatically set](#iv-x-correlation-id-can-be-automatically-set)
     - [3. Custom Logging Hooks](#3-custom-logging-hooks)
         - [i. Request Logging Hook](#i-request-logging-hook)
         - [ii. Response Logging Hook](#ii-response-logging-hook)
@@ -167,11 +168,47 @@ root_logger.setLevel(level=logging.INFO)
 client = logging_http_client.create(source="my-system-name", logger=root_logger)
 
 response = client.get('https://www.python.org')
+# => The client will append the `x-request-id` header to the request
+#
 # => Both request and response log records will include: 
 #    { http { request_id: "<uuid>", ... } }
 # => The reqeust log record will also attach it as a header: 
 #    { http { request_headers: { "x-request-id": "<uuid>", ... }, ... } }
 ```
+
+#### iv. `x-correlation-id` can be automatically set
+
+It's common to set a `x-correlation-id` header to identify the correlation of the request within a distributed system.
+Instead of having to set this header manually every single request you make, you can pass a correlation ID generator
+function to the client, and it will automatically set the `x-correlation-id` header for each request.
+
+> [!WARNING]
+> Be aware that `x-request-id` is not the same as `x-correlation-id`.
+> 
+> The `x-request-id` is unique to each request, while the `x-correlation-id` is used to correlate requests within a
+> chain of events that can span multiple services, this is common in a microservice architecture. Please ensure you
+> understand the difference between the two whilst using them with this library.
+
+```python
+import uuid
+import logging_http_client
+import logging_http_client_config 
+
+def correlation_id_provider() -> str:
+    return str(uuid.uuid4())
+
+logging_http_client_config.set_correlation_id_provider(correlation_id_provider)
+
+logging_http_client.create().get('https://www.python.org')
+# => The client will append the `x-correlation-id` header to the request 
+#
+# => The request log records will include:
+#    { http { request_headers: { "x-correlation-id": "<uuid>", ... }, ... } }
+```
+
+Do note we do NOT set the `x-correlation-id` header on the response, it's the responsibility of the server to set it
+back on the response, if they don't, then you need to relay on your logging setup to append the `correlation_id` as an 
+extra log record attribute on the client side by other means.
 
 ### 3. Custom Logging Hooks
 

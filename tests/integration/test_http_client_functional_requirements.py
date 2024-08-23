@@ -1,4 +1,5 @@
 import logging
+import uuid
 from logging import LogRecord
 
 import pytest
@@ -7,7 +8,7 @@ from wiremock.resources.mappings import HttpMethods
 
 import logging_http_client
 import logging_http_client_config
-from http_headers import X_REQUEST_ID_HEADER, X_SOURCE_HEADER
+from http_headers import X_REQUEST_ID_HEADER, X_SOURCE_HEADER, X_CORRELATION_ID_HEADER
 from logging_http_client import HttpLogRecord
 
 
@@ -222,3 +223,31 @@ def test_client_should_obscure_response_details(wiremock_server, caplog):
         assert response_log.http["response_body"] == "some response body with **** information"
     else:
         pytest.fail("Response log does not contain 'http' record attribute")
+
+
+def test_client_should_support_traceability(wiremock_server, caplog):
+    def correlation_id_provider() -> str:
+        return str(uuid.uuid4())
+
+    logging_http_client_config.set_correlation_id_provider(correlation_id_provider)
+
+    wiremock_server.for_endpoint("/traceable")
+
+    with caplog.at_level(logging.INFO):
+        logging_http_client.create().get(
+            url=wiremock_server.get_url("/traceable"),
+        )
+
+    relevant_logs = [record for record in caplog.records if record.message in ["REQUEST"]]
+
+    assert len(relevant_logs) == 1, f"Expected 1 request log, found {len(relevant_logs)}"
+
+    request_log: LogRecord = relevant_logs.pop()
+
+    if hasattr(request_log, "http"):
+        reqeust_correlation_id = request_log.http["request_headers"][X_CORRELATION_ID_HEADER]
+        assert isinstance(
+            uuid.UUID(reqeust_correlation_id), uuid.UUID
+        ), f"Expected request correlation id to be a valid UUID, but got {reqeust_correlation_id}"
+    else:
+        pytest.fail("Request log does not contain 'http' record attribute")

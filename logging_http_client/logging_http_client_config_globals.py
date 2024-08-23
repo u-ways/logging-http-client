@@ -5,6 +5,21 @@ We separate the configuration globals and getters from the main configuration mo
 avoid circular imports when using the configuration getters within the implementation code.
 """
 
+# Correlation ID Provider =====================================================
+
+_correlation_id_provider = None
+
+
+def get_correlation_id_provider():
+    global _correlation_id_provider
+    return _correlation_id_provider
+
+
+def set_correlation_id_provider(value):
+    global _correlation_id_provider
+    _correlation_id_provider = value
+
+
 # Request/Response Log Record Obscurers ======================================
 
 _request_log_record_obscurer = None
