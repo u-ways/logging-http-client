@@ -4,13 +4,14 @@ from logging import Logger
 
 from requests import Session, Response, Request, PreparedRequest
 
-from http_headers import X_SOURCE_HEADER, X_REQUEST_ID_HEADER, HEADERS_KWARG
+from http_headers import X_SOURCE_HEADER, X_REQUEST_ID_HEADER, HEADERS_KWARG, X_CORRELATION_ID_HEADER
 from http_log_record import HttpLogRecord
 from logging_http_client_config_globals import (
     is_request_logging_enabled,
     is_response_logging_enabled,
     get_custom_request_logging_hook,
     get_custom_response_logging_hook,
+    get_correlation_id_provider,
 )
 
 
@@ -43,6 +44,7 @@ class LoggingSession(Session):
         def _apply(**kwargs) -> Response:
             prepared: PreparedRequest = self.prepare_request(Request(**kwargs))
             request_id = prepared.headers.get(X_REQUEST_ID_HEADER, None)
+            correlation_id = prepared.headers.get(X_CORRELATION_ID_HEADER, None)
             source_system = prepared.headers.get(X_SOURCE_HEADER, None)
 
             kwargs.setdefault(HEADERS_KWARG, {})
@@ -51,6 +53,12 @@ class LoggingSession(Session):
                 kwargs[HEADERS_KWARG][X_REQUEST_ID_HEADER] = str(uuid.uuid4())
                 request_id = kwargs[HEADERS_KWARG][X_REQUEST_ID_HEADER]
                 prepared.headers.update({X_REQUEST_ID_HEADER: request_id})
+
+            correlation_id_provider = get_correlation_id_provider()
+            if correlation_id is None and correlation_id_provider is not None:
+                kwargs[HEADERS_KWARG][X_CORRELATION_ID_HEADER] = correlation_id_provider()
+                correlation_id = kwargs[HEADERS_KWARG][X_CORRELATION_ID_HEADER]
+                prepared.headers.update({X_CORRELATION_ID_HEADER: correlation_id})
 
             if source_system is None:
                 kwargs[HEADERS_KWARG][X_SOURCE_HEADER] = source

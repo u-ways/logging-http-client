@@ -12,11 +12,26 @@ from requests import Response, PreparedRequest
 import logging_http_client_config_globals
 from logging_http_client import HttpLogRecord
 
+CorrelationIdProviderType = Optional[Callable[[], str]]
+
 ResponseHookType = Optional[Callable[[logging.Logger, Response], None]]
 RequestHookType = Optional[Callable[[logging.Logger, PreparedRequest], None]]
 
 ResponseLogRecordObscurerType = Optional[Callable[[HttpLogRecord], HttpLogRecord]]
 RequestLogRecordObscurerType = Optional[Callable[[HttpLogRecord], HttpLogRecord]]
+
+
+def set_correlation_id_provider(provider: CorrelationIdProviderType) -> None:
+    """
+    Set a provider for the correlation id.
+
+    This is useful for setting a unique value that you can use to correlate
+    logs across different services within a distributed system, or an event
+    chain lifecycle.
+
+    The provider should be a callable that returns a string.
+    """
+    logging_http_client_config_globals.set_correlation_id_provider(provider)
 
 
 def set_request_log_record_obscurer(obscurer: RequestLogRecordObscurerType) -> None:
