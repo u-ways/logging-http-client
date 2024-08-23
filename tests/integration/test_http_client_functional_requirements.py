@@ -8,6 +8,7 @@ from wiremock.resources.mappings import HttpMethods
 import logging_http_client
 import logging_http_client_config
 from http_headers import X_REQUEST_ID_HEADER, X_SOURCE_HEADER
+from logging_http_client import HttpLogRecord
 
 
 def test_client_returns_correct_response_details(wiremock_server):
@@ -159,3 +160,65 @@ def test_client_should_log_with_custom_response_logging_hook(wiremock_server, ca
     response_log: LogRecord = relevant_logs.pop()
 
     assert response_log.message == "Custom response logging for " + wiremock_server.get_url("/custom")
+
+
+def test_client_should_obscure_request_details(wiremock_server, caplog):
+    def request_log_record_obscurer(record: HttpLogRecord) -> HttpLogRecord:
+        record.request_method = "REDACTED"
+        if record.request_headers.get("Authorization") is not None:
+            record.request_headers["Authorization"] = "Bearer ****"
+        return record
+
+    logging_http_client_config.set_request_log_record_obscurer(request_log_record_obscurer)
+
+    wiremock_server.for_endpoint("/secret")
+
+    with caplog.at_level(logging.INFO):
+        logging_http_client.create().get(
+            url=wiremock_server.get_url("/secret"),
+            headers={"accept": "application/json", "Authorization": "Bearer secret"},
+        )
+
+    relevant_logs = [record for record in caplog.records if record.message == "REQUEST"]
+
+    assert len(relevant_logs) == 1, f"Expected 1 request log, found {len(relevant_logs)}"
+
+    request_log: LogRecord = relevant_logs.pop()
+
+    if hasattr(request_log, "http"):
+        assert request_log.http["request_method"] == "REDACTED"
+        assert request_log.http["request_headers"]["Authorization"] == "Bearer ****"
+    else:
+        pytest.fail("Request log does not contain 'http' record attribute")
+
+
+def test_client_should_obscure_response_details(wiremock_server, caplog):
+    def response_log_record_obscurer(record: HttpLogRecord) -> HttpLogRecord:
+        record.response_status = 999
+        if record.response_body is not None:
+            record.response_body = record.response_body.replace("SENSITIVE", "****")
+        return record
+
+    logging_http_client_config.set_response_log_record_obscurer(response_log_record_obscurer)
+    logging_http_client_config.enable_response_body_logging()
+
+    wiremock_server.for_endpoint(
+        url="/secret", return_status=418, return_body="some response body with SENSITIVE information"
+    )
+
+    with caplog.at_level(logging.INFO):
+        logging_http_client.create().get(
+            url=wiremock_server.get_url("/secret"),
+        )
+
+    relevant_logs = [record for record in caplog.records if record.message == "RESPONSE"]
+
+    assert len(relevant_logs) == 1, f"Expected 1 response log, found {len(relevant_logs)}"
+
+    response_log: LogRecord = relevant_logs.pop()
+
+    if hasattr(response_log, "http"):
+        assert response_log.http["response_status"] == 999
+        assert response_log.http["response_body"] == "some response body with **** information"
+    else:
+        pytest.fail("Response log does not contain 'http' record attribute")

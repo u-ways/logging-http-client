@@ -6,7 +6,7 @@ from requests import Session, Response, Request, PreparedRequest
 
 from http_headers import X_SOURCE_HEADER, X_REQUEST_ID_HEADER, HEADERS_KWARG
 from http_log_record import HttpLogRecord
-from logging_http_client_config import (
+from logging_http_client_config_globals import (
     is_request_logging_enabled,
     is_response_logging_enabled,
     get_custom_request_logging_hook,

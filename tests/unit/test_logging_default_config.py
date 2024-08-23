@@ -5,6 +5,8 @@ from logging_http_client_config import (
     enable_request_body_logging,
     disable_response_logging,
     enable_response_body_logging,
+)
+from logging_http_client_config_globals import (
     is_request_logging_enabled,
     is_response_logging_enabled,
     is_request_body_logging_enabled,
