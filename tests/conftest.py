@@ -33,6 +33,9 @@ def reset_library_globals_after_each_test():
     As I keep modifying the global (static) context and processors in the ContextualLogger in each
     test, I need to clean them up after each test to avoid memory leaks or undesired side effects.
     """
+    logging_http_client_config.set_request_log_record_obscurer(None)
+    logging_http_client_config.set_response_log_record_obscurer(None)
+
     logging_http_client_config.set_custom_request_logging_hook(None)
     logging_http_client_config.set_custom_response_logging_hook(None)
 

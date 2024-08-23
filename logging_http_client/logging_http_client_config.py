@@ -1,67 +1,62 @@
+"""
+This module contains type definitions for the logging_http_client configuration.
+
+We move the type definitions to a separate file to avoid circular imports.
+"""
+
 import logging
 from typing import Optional, Callable
 
 from requests import Response, PreparedRequest
 
-_request_logging_enabled: bool = True
-_response_logging_enabled: bool = True
-
-_request_body_logging_enabled: bool = False
-_response_body_logging_enabled: bool = False
+import logging_http_client_config_globals
+from logging_http_client import HttpLogRecord
 
 ResponseHookType = Optional[Callable[[logging.Logger, Response], None]]
 RequestHookType = Optional[Callable[[logging.Logger, PreparedRequest], None]]
 
-_request_logging_hook: RequestHookType = None
-_response_logging_hook: ResponseHookType = None
+ResponseLogRecordObscurerType = Optional[Callable[[HttpLogRecord], HttpLogRecord]]
+RequestLogRecordObscurerType = Optional[Callable[[HttpLogRecord], HttpLogRecord]]
 
 
-def get_custom_request_logging_hook() -> RequestHookType:
+def set_request_log_record_obscurer(obscurer: RequestLogRecordObscurerType) -> None:
     """
-    Get the custom hook for logging all requests.
+    Sets an obscurer for all requests logged.
+
+    This is useful for redacting sensitive information from the log records.
+
+    The obscurer will run on the log record JUST BEFORE it is logged by the
+    request logger. When using the request obscurer, you are also responsible
+    for returning the log record in the correct data structure.
     """
-    global _request_logging_hook
-    return _request_logging_hook
+    logging_http_client_config_globals.set_request_log_record_obscurer(obscurer)
 
 
-def get_custom_response_logging_hook() -> ResponseHookType:
+def set_response_log_record_obscurer(obscurer: ResponseLogRecordObscurerType) -> None:
     """
-    Get the custom hook for logging all responses.
+    Sets an obscurer for all responses logged.
+
+    This is useful for redacting sensitive information from the log records.
+
+    The obscurer will run on the log record JUST BEFORE it is logged by the
+    response logger. When using the response obscurer, you are also responsible
+    for returning the log record in the correct data structure.
     """
-    global _response_logging_hook
-    return _response_logging_hook
+    logging_http_client_config_globals.set_response_log_record_obscurer(obscurer)
 
 
 def set_custom_request_logging_hook(hook: RequestHookType) -> None:
     """
     Set a custom hook for logging all requests.
     """
-    global _request_logging_hook
-    _request_logging_hook = hook
+    logging_http_client_config_globals.set_custom_request_logging_hook(hook)
 
 
 def set_custom_response_logging_hook(hook: ResponseHookType) -> None:
     """
     Set a custom hook for logging all responses.
     """
-    global _response_logging_hook
-    _response_logging_hook = hook
-
-
-def is_request_logging_enabled() -> bool:
-    return _request_logging_enabled
-
-
-def is_response_logging_enabled() -> bool:
-    return _response_logging_enabled
-
-
-def is_request_body_logging_enabled() -> bool:
-    return _request_body_logging_enabled
-
-
-def is_response_body_logging_enabled() -> bool:
-    return _response_body_logging_enabled
+    logging_http_client_config_globals.set_custom_response_logging_hook(hook)
 
 
 def disable_request_logging(disabled: bool = True) -> None:
@@ -72,8 +67,7 @@ def disable_request_logging(disabled: bool = True) -> None:
         These has no effect if you have set up custom logging hooks. (i.e.
         these are for modifying the default logging setup)
     """
-    global _request_logging_enabled
-    _request_logging_enabled = not disabled
+    logging_http_client_config_globals.set_request_logging_enabled(not disabled)
 
 
 def disable_response_logging(disabled: bool = True) -> None:
@@ -84,8 +78,7 @@ def disable_response_logging(disabled: bool = True) -> None:
         These has no effect if you have set up custom logging hooks. (i.e.
         these are for modifying the default logging setup)
     """
-    global _response_logging_enabled
-    _response_logging_enabled = not disabled
+    logging_http_client_config_globals.set_response_logging_enabled(not disabled)
 
 
 def enable_request_body_logging(enable: bool = True) -> None:
@@ -96,8 +89,7 @@ def enable_request_body_logging(enable: bool = True) -> None:
         These has no effect if you have set up custom logging hooks. (i.e.
         these are for modifying the default logging setup)
     """
-    global _request_body_logging_enabled
-    _request_body_logging_enabled = enable
+    logging_http_client_config_globals.set_request_body_logging_enabled(enable)
 
 
 def enable_response_body_logging(enable: bool = True) -> None:
@@ -108,5 +100,4 @@ def enable_response_body_logging(enable: bool = True) -> None:
         These has no effect if you have set up custom logging hooks. (i.e.
         these are for modifying the default logging setup)
     """
-    global _response_body_logging_enabled
-    _response_body_logging_enabled = enable
+    logging_http_client_config_globals.set_response_body_logging_enabled(enable)

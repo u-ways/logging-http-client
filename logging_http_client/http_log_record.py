@@ -3,7 +3,12 @@ from typing import Any, Dict, Union
 
 from requests.models import PreparedRequest, Response
 
-from logging_http_client_config import is_request_body_logging_enabled, is_response_body_logging_enabled
+from logging_http_client_config_globals import (
+    is_request_body_logging_enabled,
+    is_response_body_logging_enabled,
+    get_request_log_record_obscurer,
+    get_response_log_record_obscurer,
+)
 
 # Define Primitive type
 Primitive = Union[int, float, str, bool]
@@ -52,6 +57,9 @@ class HttpLogRecord(BaseLogRecord):
             else:
                 record.request_body = request.body
 
+        obscurer = get_request_log_record_obscurer()
+        record = obscurer(record) if obscurer is not None else record
+
         return {"http": record.to_dict()}
 
     @staticmethod
@@ -65,5 +73,8 @@ class HttpLogRecord(BaseLogRecord):
 
         if response.content and is_response_body_logging_enabled():
             record.response_body = response.content.decode()
+
+        obscurer = get_response_log_record_obscurer()
+        record = obscurer(record) if obscurer is not None else record
 
         return {"http": record.to_dict()}
