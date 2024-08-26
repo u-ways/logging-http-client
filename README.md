@@ -2,10 +2,11 @@
 
 [![CICD](https://github.com/u-ways/logging-http-client/actions/workflows/CICD.yml/badge.svg)](https://github.com/u-ways/logging-http-client/actions/workflows/CICD.yml)
 [![Python: 3.12](https://img.shields.io/badge/Python-3.12-008be1.svg)](https://www.python.org/downloads/release/python-3110/)
-[![Downloads](https://static.pepy.tech/badge/logging-http-client/month)](https://pepy.tech/project/logging-http-client)
-[![Build: Poetry](https://img.shields.io/badge/Build-Poetry-ccc.svg)](https://python-poetry.org/)
-[![Linter: Flake8](https://img.shields.io/badge/Linter-Flake8-ccc.svg)](https://flake8.pycqa.org/en/latest/)
-[![Style: Black](https://img.shields.io/badge/Style-Black-ccc.svg)](https://github.com/psf/black)
+[![Build: Poetry](https://img.shields.io/badge/Build-Poetry-008be1.svg)](https://python-poetry.org/)
+[![Linter: Flake8](https://img.shields.io/badge/Linter-Flake8-008be1.svg)](https://flake8.pycqa.org/en/latest/)
+[![Style: Black](https://img.shields.io/badge/Style-Black-008be1.svg)](https://github.com/psf/black)
+[![PyPI - Version](https://img.shields.io/pypi/v/logging-http-client?color=ffd343)](https://pypi.org/project/logging-http-client/)
+[![PyPI - Downloads](https://img.shields.io/pypi/dm/logging-http-client?color=ffd343)](https://pypistats.org/packages/logging-http-client)
 
 A logging library built on top of the [requests](https://pypi.org/project/requests/) library to provide a familiar
 interface for sending HTTP requests with observability features out-of-the-box.
