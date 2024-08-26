@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "logging-http-client"
-version = "2.32.3.2"
+version = "2.32.3.3"
 description = "A logging library built on top of the requests library to provide a familiar interface for sending HTTP requests."
 authors = ["u-ways <work@u-ways.info>"]
 packages = [{ include = "logging_http_client", from = "." }]
