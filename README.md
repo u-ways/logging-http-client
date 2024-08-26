@@ -1,10 +1,11 @@
 # Logging HTTP Client
 
 [![CICD](https://github.com/u-ways/logging-http-client/actions/workflows/CICD.yml/badge.svg)](https://github.com/u-ways/logging-http-client/actions/workflows/CICD.yml)
-[![Poetry](https://img.shields.io/endpoint?url=https://python-poetry.org/badge/v0.json)](https://python-poetry.org/)
-[![Python: 3.12](https://img.shields.io/badge/python-3.12-008be1.svg)](https://www.python.org/downloads/release/python-3110/)
-[![Linter: Flake8](https://img.shields.io/badge/linter-Flake8-008be1.svg)](https://flake8.pycqa.org/en/latest/)
-[![Style: Black](https://img.shields.io/badge/style-Black-000.svg)](https://github.com/psf/black)
+[![Python: 3.12](https://img.shields.io/badge/Python-3.12-008be1.svg)](https://www.python.org/downloads/release/python-3110/)
+[![Downloads](https://static.pepy.tech/badge/logging-http-client/month)](https://pepy.tech/project/logging-http-client)
+[![Build: Poetry](https://img.shields.io/badge/Build-Poetry-ccc.svg)](https://python-poetry.org/)
+[![Linter: Flake8](https://img.shields.io/badge/Linter-Flake8-ccc.svg)](https://flake8.pycqa.org/en/latest/)
+[![Style: Black](https://img.shields.io/badge/Style-Black-ccc.svg)](https://github.com/psf/black)
 
 A logging library built on top of the [requests](https://pypi.org/project/requests/) library to provide a familiar
 interface for sending HTTP requests with observability features out-of-the-box.
