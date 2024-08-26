@@ -191,13 +191,12 @@ function to the client, and it will automatically set the `x-correlation-id` hea
 
 ```python
 import uuid
-import logging_http_client
-import logging_http_client_config 
+import logging_http_client 
 
 def correlation_id_provider() -> str:
     return str(uuid.uuid4())
 
-logging_http_client_config.set_correlation_id_provider(correlation_id_provider)
+logging_http_client.set_correlation_id_provider(correlation_id_provider)
 
 logging_http_client.create().get('https://www.python.org')
 # => The client will append the `x-correlation-id` header to the request 
@@ -227,14 +226,13 @@ import logging
 from requests import PreparedRequest
 
 import logging_http_client
-import logging_http_client_config
 
 
 def custom_request_logging_hook(logger: logging.Logger, request: PreparedRequest):
     logger.debug("Custom request logging for %s", request.url)
 
 
-logging_http_client_config.set_custom_request_logging_hook(custom_request_logging_hook)
+logging_http_client.set_custom_request_logging_hook(custom_request_logging_hook)
 
 logging_http_client.create().get('https://www.python.org')
 
@@ -254,14 +252,13 @@ import logging
 from requests import Response
 
 import logging_http_client
-import logging_http_client_config
 
 
 def custom_response_logging_hook(logger: logging.Logger, response: Response):
     logger.debug("Custom response logging for %s", response.url)
 
 
-logging_http_client_config.set_custom_response_logging_hook(custom_response_logging_hook)
+logging_http_client.set_custom_response_logging_hook(custom_response_logging_hook)
 
 logging_http_client.create().get('https://www.python.org')
 
@@ -281,10 +278,9 @@ have custom logging hooks set.
 
 ```python
 import logging_http_client
-import logging_http_client_config
 
-logging_http_client_config.disable_request_logging()
-logging_http_client_config.disable_response_logging()
+logging_http_client.disable_request_logging()
+logging_http_client.disable_response_logging()
 
 logging_http_client.create().get('https://www.python.org')
 # => No request log record will be generated
@@ -298,10 +294,9 @@ or `enable_response_body_logging` methods respectively. This will log the reques
 
 ```python
 import logging_http_client
-import logging_http_client_config
 
-logging_http_client_config.enable_request_body_logging()
-logging_http_client_config.enable_response_body_logging()
+logging_http_client.enable_request_body_logging()
+logging_http_client.enable_response_body_logging()
 
 logging_http_client.create().get('https://www.python.org')
 # => Log record will include the request or response body (if present)
@@ -320,7 +315,6 @@ function will be called JUST BEFORE the request is logged.
 
 ```python
 import logging_http_client
-import logging_http_client_config
 from logging_http_client import HttpLogRecord
 
 
@@ -331,7 +325,7 @@ def request_log_record_obscurer(record: HttpLogRecord) -> HttpLogRecord:
     return record
 
 
-logging_http_client_config.set_request_log_record_obscurer(request_log_record_obscurer)
+logging_http_client.set_request_log_record_obscurer(request_log_record_obscurer)
 
 logging_http_client.create().get(
     url='https://www.python.org',
@@ -349,7 +343,6 @@ The obscurer function should take a `HttpLogRecord` object and expects to return
 
 ```python
 import logging_http_client
-import logging_http_client_config
 from logging_http_client import HttpLogRecord
 
 
@@ -360,8 +353,8 @@ def response_log_record_obscurer(record: HttpLogRecord) -> HttpLogRecord:
     return record
 
 
-logging_http_client_config.set_response_log_record_obscurer(response_log_record_obscurer)
-logging_http_client_config.enable_response_body_logging()
+logging_http_client.set_response_log_record_obscurer(response_log_record_obscurer)
+logging_http_client.enable_response_body_logging()
 
 logging_http_client.create().get('https://www.python.org')
 # Assume the response body contains "some response body with SENSITIVE information" 

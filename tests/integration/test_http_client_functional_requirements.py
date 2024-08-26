@@ -7,7 +7,6 @@ from requests import PreparedRequest, Response
 from wiremock.resources.mappings import HttpMethods
 
 import logging_http_client
-import logging_http_client_config
 from http_headers import X_REQUEST_ID_HEADER, X_SOURCE_HEADER, X_CORRELATION_ID_HEADER
 from logging_http_client import HttpLogRecord
 
@@ -74,8 +73,8 @@ def test_client_should_log_response_details_by_default(wiremock_server, caplog):
 
 
 def test_client_should_log_request_with_body_logging_enabled(wiremock_server, caplog):
-    logging_http_client_config.enable_request_body_logging(enable=True)
-    logging_http_client_config.enable_response_body_logging(enable=True)
+    logging_http_client.enable_request_body_logging(enable=True)
+    logging_http_client.enable_response_body_logging(enable=True)
 
     wiremock_server.for_endpoint(
         "/create", method=HttpMethods.POST, return_status=201, return_body='{ "message": "done!" }'
@@ -104,8 +103,8 @@ def test_client_should_log_request_with_body_logging_enabled(wiremock_server, ca
 
 
 def test_client_should_log_with_logging_disabled(wiremock_server, caplog):
-    logging_http_client_config.disable_request_logging(disabled=True)
-    logging_http_client_config.disable_response_logging(disabled=True)
+    logging_http_client.disable_request_logging(disabled=True)
+    logging_http_client.disable_response_logging(disabled=True)
 
     wiremock_server.for_endpoint("/secret")
 
@@ -123,7 +122,7 @@ def test_client_should_log_with_custom_request_logging_hook(wiremock_server, cap
     def custom_request_logging_hook(logger: logging.Logger, request: PreparedRequest):
         logger.debug("Custom request logging for %s", request.url)
 
-    logging_http_client_config.set_custom_request_logging_hook(custom_request_logging_hook)
+    logging_http_client.set_custom_request_logging_hook(custom_request_logging_hook)
 
     wiremock_server.for_endpoint("/custom")
 
@@ -145,7 +144,7 @@ def test_client_should_log_with_custom_response_logging_hook(wiremock_server, ca
     def custom_response_logging_hook(logger: logging.Logger, response: Response):
         logger.debug("Custom response logging for %s", response.url)
 
-    logging_http_client_config.set_custom_response_logging_hook(custom_response_logging_hook)
+    logging_http_client.set_custom_response_logging_hook(custom_response_logging_hook)
 
     wiremock_server.for_endpoint("/custom")
 
@@ -170,7 +169,7 @@ def test_client_should_obscure_request_details(wiremock_server, caplog):
             record.request_headers["Authorization"] = "Bearer ****"
         return record
 
-    logging_http_client_config.set_request_log_record_obscurer(request_log_record_obscurer)
+    logging_http_client.set_request_log_record_obscurer(request_log_record_obscurer)
 
     wiremock_server.for_endpoint("/secret")
 
@@ -200,8 +199,8 @@ def test_client_should_obscure_response_details(wiremock_server, caplog):
             record.response_body = record.response_body.replace("SENSITIVE", "****")
         return record
 
-    logging_http_client_config.set_response_log_record_obscurer(response_log_record_obscurer)
-    logging_http_client_config.enable_response_body_logging()
+    logging_http_client.set_response_log_record_obscurer(response_log_record_obscurer)
+    logging_http_client.enable_response_body_logging()
 
     wiremock_server.for_endpoint(
         url="/secret", return_status=418, return_body="some response body with SENSITIVE information"
@@ -229,7 +228,7 @@ def test_client_should_support_traceability(wiremock_server, caplog):
     def correlation_id_provider() -> str:
         return str(uuid.uuid4())
 
-    logging_http_client_config.set_correlation_id_provider(correlation_id_provider)
+    logging_http_client.set_correlation_id_provider(correlation_id_provider)
 
     wiremock_server.for_endpoint("/traceable")
 

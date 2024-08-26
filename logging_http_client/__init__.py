@@ -66,6 +66,17 @@ from requests.status_codes import codes  # noqa: F401
 
 from .http_log_record import HttpLogRecord  # noqa: F401
 from .logging_http_client_class import LoggingHttpClient
+from .logging_http_client_config import (  # noqa: F401
+    set_correlation_id_provider,
+    set_request_log_record_obscurer,
+    set_response_log_record_obscurer,
+    set_custom_request_logging_hook,
+    set_custom_response_logging_hook,
+    disable_request_logging,
+    disable_response_logging,
+    enable_request_body_logging,
+    enable_response_body_logging,
+)
 
 
 def create(
