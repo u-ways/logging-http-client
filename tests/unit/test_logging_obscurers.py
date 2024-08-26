@@ -1,12 +1,9 @@
 from logging_http_client import HttpLogRecord
-from logging_http_client_config import (
+from logging_http_client.logging_http_client_config import (
     set_request_log_record_obscurer,
     set_response_log_record_obscurer,
 )
-from logging_http_client_config_globals import (
-    get_request_log_record_obscurer,
-    get_response_log_record_obscurer,
-)
+import logging_http_client.logging_http_client_config_globals as config
 
 
 def mock_request_log_record_obscurer(record: HttpLogRecord) -> HttpLogRecord:
@@ -27,33 +24,33 @@ def mock_response_log_record_obscurer(record: HttpLogRecord) -> HttpLogRecord:
 
 
 def test_default_request_log_record_obscurer_is_none():
-    assert get_request_log_record_obscurer() is None
+    assert config.get_request_log_record_obscurer() is None
 
 
 def test_default_response_log_record_obscurer_is_none():
-    assert get_response_log_record_obscurer() is None
+    assert config.get_response_log_record_obscurer() is None
 
 
 def test_set_request_log_record_obscurer():
     set_request_log_record_obscurer(mock_request_log_record_obscurer)
-    assert get_request_log_record_obscurer() is mock_request_log_record_obscurer
+    assert config.get_request_log_record_obscurer() is mock_request_log_record_obscurer
 
 
 def test_set_response_log_record_obscurer():
     set_response_log_record_obscurer(mock_response_log_record_obscurer)
-    assert get_response_log_record_obscurer() is mock_response_log_record_obscurer
+    assert config.get_response_log_record_obscurer() is mock_response_log_record_obscurer
 
 
 def test_reset_request_log_record_obscurer():
     set_request_log_record_obscurer(mock_request_log_record_obscurer)
     set_request_log_record_obscurer(None)
-    assert get_request_log_record_obscurer() is None
+    assert config.get_request_log_record_obscurer() is None
 
 
 def test_reset_response_log_record_obscurer():
     set_response_log_record_obscurer(mock_response_log_record_obscurer)
     set_response_log_record_obscurer(None)
-    assert get_response_log_record_obscurer() is None
+    assert config.get_response_log_record_obscurer() is None
 
 
 # Functionality Tests =========================================================
@@ -68,7 +65,7 @@ def test_request_log_record_obscurer_functionality():
         request_body="some request body that should not be changed",
     )
 
-    obscurer = get_request_log_record_obscurer()
+    obscurer = config.get_request_log_record_obscurer()
     obscured_record: HttpLogRecord = obscurer(http_log_record)
 
     assert obscured_record.request_method == "REDACTED"
@@ -83,7 +80,7 @@ def test_response_log_record_obscurer_functionality():
         response_status=200,
         response_body="some response body with SENSITIVE information",
     )
-    obscurer = get_response_log_record_obscurer()
+    obscurer = config.get_response_log_record_obscurer()
     obscured_record: HttpLogRecord = obscurer(http_log_record)
 
     assert obscured_record.response_status == 999

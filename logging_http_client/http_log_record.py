@@ -3,12 +3,7 @@ from typing import Any, Dict, Union
 
 from requests.models import PreparedRequest, Response
 
-from logging_http_client_config_globals import (
-    is_request_body_logging_enabled,
-    is_response_body_logging_enabled,
-    get_request_log_record_obscurer,
-    get_response_log_record_obscurer,
-)
+import logging_http_client.logging_http_client_config_globals as config
 
 # Define Primitive type
 Primitive = Union[int, float, str, bool]
@@ -51,13 +46,13 @@ class HttpLogRecord(BaseLogRecord):
         record.request_query_params = request.params if hasattr(request, "params") else {}
         record.request_headers = dict(request.headers) if request.headers else {}
 
-        if request.body and is_request_body_logging_enabled():
+        if request.body and config.is_request_body_logging_enabled():
             if isinstance(request.body, bytes):
                 record.request_body = request.body.decode()
             else:
                 record.request_body = request.body
 
-        obscurer = get_request_log_record_obscurer()
+        obscurer = config.get_request_log_record_obscurer()
         record = obscurer(record) if obscurer is not None else record
 
         return {"http": record.to_dict()}
@@ -71,10 +66,10 @@ class HttpLogRecord(BaseLogRecord):
         record.response_headers = dict(response.headers) if response.headers else {}
         record.response_duration_ms = int(response.elapsed.microseconds // 1000)
 
-        if response.content and is_response_body_logging_enabled():
+        if response.content and config.is_response_body_logging_enabled():
             record.response_body = response.content.decode()
 
-        obscurer = get_response_log_record_obscurer()
+        obscurer = config.get_response_log_record_obscurer()
         record = obscurer(record) if obscurer is not None else record
 
         return {"http": record.to_dict()}

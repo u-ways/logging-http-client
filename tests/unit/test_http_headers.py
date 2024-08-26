@@ -1,6 +1,6 @@
 import time
 
-from http_headers import with_source_header
+from logging_http_client.http_headers import with_source_header
 
 
 def test_with_source_header():

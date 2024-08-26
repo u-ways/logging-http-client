@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Dict, List
 
-from http_log_record import BaseLogRecord
+from logging_http_client.http_log_record import BaseLogRecord
 
 
 def test_to_dict_should_not_omit_any_present_fields():

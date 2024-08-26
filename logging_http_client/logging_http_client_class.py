@@ -3,9 +3,9 @@ from __future__ import annotations
 import logging
 from typing import Mapping
 
-from http_headers import with_source_header
-from http_methods import HttpMethod
-from http_session import LoggingSession
+from logging_http_client.http_headers import with_source_header
+from logging_http_client.http_methods import HttpMethod
+from logging_http_client.http_session import LoggingSession
 
 
 class LoggingHttpClient:

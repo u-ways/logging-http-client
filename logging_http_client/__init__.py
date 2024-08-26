@@ -64,7 +64,6 @@ from requests.sessions import Session, session  # noqa: F401
 # noinspection PyUnresolvedReferences
 from requests.status_codes import codes  # noqa: F401
 
-# noinspection PyUnresolvedReferences
 from .http_log_record import HttpLogRecord  # noqa: F401
 from .logging_http_client_class import LoggingHttpClient
 

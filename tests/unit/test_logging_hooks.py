@@ -1,13 +1,10 @@
 from requests import Response, PreparedRequest
 
-from logging_http_client_config import (
+from logging_http_client.logging_http_client_config import (
     set_custom_request_logging_hook,
     set_custom_response_logging_hook,
 )
-from logging_http_client_config_globals import (
-    get_custom_request_logging_hook,
-    get_custom_response_logging_hook,
-)
+import logging_http_client.logging_http_client_config_globals as config
 
 
 def mock_request_hook(_, request: PreparedRequest) -> None:
@@ -22,33 +19,33 @@ def mock_response_hook(_, response: Response) -> None:
 
 
 def test_default_request_logging_hook_is_none():
-    assert get_custom_request_logging_hook() is None
+    assert config.get_custom_request_logging_hook() is None
 
 
 def test_default_response_logging_hook_is_none():
-    assert get_custom_response_logging_hook() is None
+    assert config.get_custom_response_logging_hook() is None
 
 
 def test_set_custom_request_logging_hook():
     set_custom_request_logging_hook(mock_request_hook)
-    assert get_custom_request_logging_hook() is mock_request_hook
+    assert config.get_custom_request_logging_hook() is mock_request_hook
 
 
 def test_set_custom_response_logging_hook():
     set_custom_response_logging_hook(mock_response_hook)
-    assert get_custom_response_logging_hook() is mock_response_hook
+    assert config.get_custom_response_logging_hook() is mock_response_hook
 
 
 def test_reset_request_logging_hook():
     set_custom_request_logging_hook(mock_request_hook)
     set_custom_request_logging_hook(None)
-    assert get_custom_request_logging_hook() is None
+    assert config.get_custom_request_logging_hook() is None
 
 
 def test_reset_response_logging_hook():
     set_custom_response_logging_hook(mock_response_hook)
     set_custom_response_logging_hook(None)
-    assert get_custom_response_logging_hook() is None
+    assert config.get_custom_response_logging_hook() is None
 
 
 # Functionality Tests =========================================================
@@ -60,7 +57,7 @@ def test_request_logging_hook_functionality(capsys):
     request = PreparedRequest()
     request.method = "GET"
 
-    hook = get_custom_request_logging_hook()
+    hook = config.get_custom_request_logging_hook()
     hook(None, request)
 
     captured = capsys.readouterr()
@@ -73,7 +70,7 @@ def test_response_logging_hook_functionality(capsys):
     response = Response()
     response.status_code = 200
 
-    hook = get_custom_response_logging_hook()
+    hook = config.get_custom_response_logging_hook()
     hook(None, response)
 
     captured = capsys.readouterr()

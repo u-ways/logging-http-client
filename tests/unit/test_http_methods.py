@@ -1,6 +1,6 @@
 import pytest
 
-from http_methods import HttpMethod
+from logging_http_client.http_methods import HttpMethod
 
 
 @pytest.mark.parametrize(
