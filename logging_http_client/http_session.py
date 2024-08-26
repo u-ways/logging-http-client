@@ -4,15 +4,14 @@ from logging import Logger
 
 from requests import Session, Response, Request, PreparedRequest
 
-from http_headers import X_SOURCE_HEADER, X_REQUEST_ID_HEADER, HEADERS_KWARG, X_CORRELATION_ID_HEADER
-from http_log_record import HttpLogRecord
-from logging_http_client_config_globals import (
-    is_request_logging_enabled,
-    is_response_logging_enabled,
-    get_custom_request_logging_hook,
-    get_custom_response_logging_hook,
-    get_correlation_id_provider,
+import logging_http_client.logging_http_client_config_globals as config
+from logging_http_client.http_headers import (
+    X_SOURCE_HEADER,
+    X_REQUEST_ID_HEADER,
+    HEADERS_KWARG,
+    X_CORRELATION_ID_HEADER,
 )
+from logging_http_client.http_log_record import HttpLogRecord
 
 
 class LoggingSession(Session):
@@ -54,7 +53,7 @@ class LoggingSession(Session):
                 request_id = kwargs[HEADERS_KWARG][X_REQUEST_ID_HEADER]
                 prepared.headers.update({X_REQUEST_ID_HEADER: request_id})
 
-            correlation_id_provider = get_correlation_id_provider()
+            correlation_id_provider = config.get_correlation_id_provider()
             if correlation_id is None and correlation_id_provider is not None:
                 kwargs[HEADERS_KWARG][X_CORRELATION_ID_HEADER] = correlation_id_provider()
                 correlation_id = kwargs[HEADERS_KWARG][X_CORRELATION_ID_HEADER]
@@ -65,11 +64,11 @@ class LoggingSession(Session):
                 source_system = kwargs[HEADERS_KWARG][X_SOURCE_HEADER]
                 prepared.headers.update({X_SOURCE_HEADER: source_system})
 
-            request_logging_hook = get_custom_request_logging_hook()
+            request_logging_hook = config.get_custom_request_logging_hook()
             if request_logging_hook is not None:
                 request_logging_hook(logger, prepared)
             else:
-                if is_request_logging_enabled():
+                if config.is_request_logging_enabled():
                     logger.info(
                         msg="REQUEST",
                         extra=HttpLogRecord.request_processor(
@@ -80,11 +79,11 @@ class LoggingSession(Session):
             # Call the original method... (with modified **kwargs)
             response: Response = original_method(**kwargs)
 
-            response_logging_hook = get_custom_response_logging_hook()
+            response_logging_hook = config.get_custom_response_logging_hook()
             if response_logging_hook is not None:
                 response_logging_hook(logger, response)
             else:
-                if is_response_logging_enabled():
+                if config.is_response_logging_enabled():
                     logger.info(
                         msg="RESPONSE", extra=HttpLogRecord.response_processor(request_id=request_id, response=response)
                     )
