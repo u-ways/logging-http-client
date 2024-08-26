@@ -36,12 +36,14 @@ interface for sending HTTP requests with observability features out-of-the-box.
     - [Prerequisites](#prerequisites)
     - [Environment Setup](#environment-setup)
     - [Code Quality](#code-quality)
+    - [Versioning Strategy](#versioning-strategy)
 
 ## Background
 
-The requests library is a popular library for sending HTTP requests in Python. However, it does not provide adequate
-observability features out of the box such as tracing and logging. As such, this library was built to decorate the
-requests library API to provide these opinionated features for common use cases.
+The [requests](https://pypi.org/project/requests/) library is a popular library for sending HTTP requests in Python. 
+However, it does not provide adequate observability features out of the box such as tracing and logging. As such, 
+this library was built to decorate the requests library API to provide these opinionated features for common use 
+cases.
 
 ## Usage
 
@@ -428,5 +430,24 @@ line with the project standards:
 ```bash
 make check-code-quality
 ```
+
+### Versioning Strategy
+
+Since this project is tightly coupled with the requests library, we will follow the versioning strategy of the requests'
+library. This means that the major, minor, and patch versions of this library will be the same as the requests' library
+version it currently decorates. On top of that, an extra versioning suffix will be added to the end of the version to 
+indicate the iteration of this library.
+
+So for example, if the requests library is at version `1.2.3`, then this library will be at version `1.2.3.X`, where `X`
+is the iteration of this library, which will be numerical increments starting from `0`. 
+
+We have no intention to follow [Semantic Versioning](https://semver.org/) strategy to version this library, as I've made
+a design decision to keep the features of this library's as small as possible, i.e. 
+
+_"Do few things, but do them well..."_
+
+So for the most part, the maintenance of this library will be keeping it up-to-date with newer versions of the
+the [requests](https://pypi.org/project/requests/) library, whilist ensuring **everything** still works as expeceted.
+Therefore, maintaining our high test coverage is crucial for long-term useability.
 
 ___
