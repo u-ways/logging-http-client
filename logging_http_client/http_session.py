@@ -1,6 +1,8 @@
+import inspect
 import uuid
 from functools import wraps
 from logging import Logger
+from typing import KeysView
 
 from requests import Session, Response, Request, PreparedRequest
 
@@ -18,6 +20,8 @@ class LoggingSession(Session):
     """
     A subclass of requests.Session that logs the request and response details.
     """
+
+    REQUEST_CLASS_PARAMS: KeysView[str] = inspect.signature(Request).parameters.keys()
 
     def __init__(self, source: str, logger: Logger) -> None:
         super().__init__()
@@ -41,7 +45,9 @@ class LoggingSession(Session):
     def decorate(self, source: str, logger: Logger, original_method: callable) -> callable:
         @wraps(original_method)
         def _apply(**kwargs) -> Response:
-            prepared: PreparedRequest = self.prepare_request(Request(**kwargs))
+            request_object_kwargs = {k: v for k, v in kwargs.items() if k in self.REQUEST_CLASS_PARAMS}
+            req = Request(**request_object_kwargs)
+            prepared: PreparedRequest = self.prepare_request(req)
             request_id = prepared.headers.get(X_REQUEST_ID_HEADER, None)
             correlation_id = prepared.headers.get(X_CORRELATION_ID_HEADER, None)
             source_system = prepared.headers.get(X_SOURCE_HEADER, None)

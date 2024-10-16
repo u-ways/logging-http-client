@@ -1,14 +1,15 @@
+import inspect
 import logging
 import uuid
 from logging import LogRecord
-
 import pytest
-from requests import PreparedRequest, Response
+from requests import PreparedRequest, Response, Timeout, Session
 from wiremock.resources.mappings import HttpMethods
 
 import logging_http_client
 from http_headers import X_REQUEST_ID_HEADER, X_SOURCE_HEADER, X_CORRELATION_ID_HEADER
 from logging_http_client import HttpLogRecord
+from logging_http_client.http_methods import HttpMethod
 
 
 def test_client_returns_correct_response_details(wiremock_server):
@@ -250,3 +251,38 @@ def test_client_should_support_traceability(wiremock_server, caplog):
         ), f"Expected request correlation id to be a valid UUID, but got {reqeust_correlation_id}"
     else:
         pytest.fail("Request log does not contain 'http' record attribute")
+
+
+def test_client_should_raise_timeout_error_on_request_timeout(wiremock_server):
+
+    wiremock_server.for_endpoint(
+        "/create", method=HttpMethods.POST, return_status=201, return_body='{ "message": "done!" }', fixed_delay_ms=1000
+    )
+    with pytest.raises(Timeout):
+        logging_http_client.create().post(
+            url=wiremock_server.get_url("/create"),
+            timeout=1,
+            headers={"accept": "application/json"},
+            json='{ "key": "value" }',
+        )
+
+
+@pytest.mark.parametrize("http_method", list(HttpMethod))
+def test_client_does_not_raise_exception_for_expected_optional_arguments(wiremock_server, http_method):
+    wiremock_server.for_endpoint(
+        "/create", method=http_method.value, return_status=201, return_body='{ "message": "done!" }'
+    )
+
+    optional_arguments = {
+        key: None
+        for key in inspect.signature(Session.request).parameters.keys()
+        if key not in ["self", "method", "url", "headers"]
+    }
+
+    request_func = getattr(logging_http_client.create(), http_method.value.lower())
+
+    request_func(
+        url=wiremock_server.get_url("/create"),
+        headers={"accept": "application/json"},
+        **optional_arguments,
+    )

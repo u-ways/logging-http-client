@@ -12,13 +12,24 @@ def wiremock_server():
 
         # Add a method to the wm object for adding mappings
         def for_endpoint(
-            url, method=HttpMethods.GET, return_status=200, return_body="", headers=None, persistent=False
+            url,
+            method=HttpMethods.GET,
+            return_status=200,
+            return_body="",
+            headers=None,
+            persistent=False,
+            fixed_delay_ms=None,
         ):
-            headers = headers or {"content-type": "application/json"}
+            mapping_response = MappingResponse(
+                status=return_status,
+                body=return_body,
+                headers=headers or {"content-type": "application/json"},
+                fixed_delay_milliseconds=fixed_delay_ms,
+            )
             Mappings.create_mapping(
                 Mapping(
                     request=MappingRequest(method=method, url=url),
-                    response=MappingResponse(status=return_status, body=return_body, headers=headers),
+                    response=mapping_response,
                     persistent=persistent,
                 )
             )
