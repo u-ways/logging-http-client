@@ -268,9 +268,7 @@ def test_client_should_raise_timeout_error_on_request_timeout(wiremock_server):
 
 
 @pytest.mark.parametrize("http_method", list(HttpMethod))
-def test_client_does_not_raise_exception_for_expected_optional_arguments(
-    wiremock_server, http_method
-):
+def test_client_does_not_raise_exception_for_expected_optional_arguments(wiremock_server, http_method):
     wiremock_server.for_endpoint(
         "/create", method=http_method.value, return_status=201, return_body='{ "message": "done!" }'
     )
