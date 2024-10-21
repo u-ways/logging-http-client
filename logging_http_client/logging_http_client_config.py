@@ -116,3 +116,22 @@ def enable_response_body_logging(enable: bool = True) -> None:
         these are for modifying the default logging setup)
     """
     config.set_response_body_logging_enabled(enable)
+
+
+def set_logging_level(level: str | int = 20) -> None:
+    """
+    Set the logging level for the logger. Default is 20 which represents 'INFO'.
+
+    The level should be a string such as 'DEBUG', 'INFO', 'WARNING', 'ERROR', or 'CRITICAL'.
+    """
+    if isinstance(level, str):
+        level = level.upper()
+        numeric_level = getattr(logging, level, None)
+        if not isinstance(numeric_level, int):
+            raise ValueError(f"Invalid log level: {level}")
+    elif isinstance(level, int):
+        numeric_level = level
+    else:
+        raise ValueError(f"Log level must be a string or an integer, got {type(level)}")
+    print(f"Logging level set to {numeric_level}")
+    config.set_logging_level(numeric_level)

@@ -122,3 +122,18 @@ def set_request_body_logging_enabled(value: bool):
 def set_response_body_logging_enabled(value: bool):
     global _response_body_logging_enabled
     _response_body_logging_enabled = value
+
+
+# Request/Response Logging Toggle =============================================
+
+_logging_level: int = 20  # 20 is the default logging level for logging.INFO
+
+
+def set_logging_level(value: int):
+    global _logging_level
+    _logging_level = value
+
+
+def get_logging_level():
+    global _logging_level
+    return _logging_level
