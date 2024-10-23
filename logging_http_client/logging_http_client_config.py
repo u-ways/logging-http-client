@@ -127,11 +127,11 @@ def set_logging_level(level: str | int = 20) -> None:
     if isinstance(level, str):
         level = level.upper()
         numeric_level = getattr(logging, level, None)
-        if not isinstance(numeric_level, int):
-            raise ValueError(f"Invalid log level: {level}")
+        if not numeric_level:
+            numeric_level = 20
     elif isinstance(level, int):
-        numeric_level = level
-    else:
-        raise ValueError(f"Log level must be a string or an integer, got {type(level)}")
-    print(f"Logging level set to {numeric_level}")
+        if not 0 <= level <= 50 or level % 10 != 0:
+            numeric_level = 20
+        else:
+            numeric_level = level
     config.set_logging_level(numeric_level)
