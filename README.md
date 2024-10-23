@@ -346,6 +346,18 @@ logging_http_client.create().get('https://www.python.org')
 # => Log record will include the request or response body (if present)
 ```
 
+#### iii. Customizing the logging level
+
+By default, the library logs at the 'INFO' level. To adjust this, use the set_logging_level method. You can specify the desired level as either an integer (10, 20, 30, 40, 50) or a string ("INFO", "DEBUG", etc.).
+```python
+import logging_http_client
+
+logging_http_client.set_logging_level("DEBUG")
+
+logging_http_client.create().get('https://www.python.org')
+# => Logs will be recorded at the DEBUG level now.
+```
+
 ### 5. Obscuring Sensitive Data
 
 The library provides a way to obscure sensitive data in the request or response log records. This is useful when you
