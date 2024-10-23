@@ -76,6 +76,7 @@ from .logging_http_client_config import (  # noqa: F401
     disable_response_logging,
     enable_request_body_logging,
     enable_response_body_logging,
+    set_logging_level,
 )
 
 

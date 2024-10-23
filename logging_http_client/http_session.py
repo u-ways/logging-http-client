@@ -37,12 +37,14 @@ class LoggingSession(Session):
             self.options,
         ]
 
+        logging_level = config.get_logging_level()
+
         for method in methods_to_decorate:
             method_name = method.__name__
-            decorated_method = self.decorate(source, logger, method)
+            decorated_method = self.decorate(source, logger, method, logging_level)
             setattr(self, method_name, decorated_method)
 
-    def decorate(self, source: str, logger: Logger, original_method: callable) -> callable:
+    def decorate(self, source: str, logger: Logger, original_method: callable, logging_level: int) -> callable:
         @wraps(original_method)
         def _apply(**kwargs) -> Response:
             request_object_kwargs = {k: v for k, v in kwargs.items() if k in self.REQUEST_CLASS_PARAMS}
@@ -75,7 +77,8 @@ class LoggingSession(Session):
                 request_logging_hook(logger, prepared)
             else:
                 if config.is_request_logging_enabled():
-                    logger.info(
+                    logger.log(
+                        level=logging_level,
                         msg="REQUEST",
                         extra=HttpLogRecord.request_processor(
                             source_system=source_system, request_id=request_id, request=prepared
@@ -90,8 +93,10 @@ class LoggingSession(Session):
                 response_logging_hook(logger, response)
             else:
                 if config.is_response_logging_enabled():
-                    logger.info(
-                        msg="RESPONSE", extra=HttpLogRecord.response_processor(request_id=request_id, response=response)
+                    logger.log(
+                        level=logging_level,
+                        msg="RESPONSE",
+                        extra=HttpLogRecord.response_processor(request_id=request_id, response=response),
                     )
 
             return response
