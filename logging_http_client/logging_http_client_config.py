@@ -11,6 +11,7 @@ from requests import Response, PreparedRequest
 
 import logging_http_client.logging_http_client_config_globals as config
 from logging_http_client.http_log_record import HttpLogRecord
+from logging_http_client.log_level import LogLevel
 
 CorrelationIdProviderType = Optional[Callable[[], str]]
 
@@ -118,20 +119,14 @@ def enable_response_body_logging(enable: bool = True) -> None:
     config.set_response_body_logging_enabled(enable)
 
 
-def set_logging_level(level: str | int = 20) -> None:
+def set_logging_level(level: LogLevel) -> None:
     """
     Set the logging level for the logger. Default is 20 which represents 'INFO'.
 
     The level should be a string such as 'DEBUG', 'INFO', 'WARNING', 'ERROR', or 'CRITICAL'.
     """
-    if isinstance(level, str):
-        level = level.upper()
-        numeric_level = getattr(logging, level, None)
-        if not numeric_level:
-            numeric_level = 20
-    elif isinstance(level, int):
-        if not 0 <= level <= 50 or level % 10 != 0:
-            numeric_level = 20
-        else:
-            numeric_level = level
-    config.set_logging_level(numeric_level)
+    if not isinstance(level, LogLevel):
+        level = LogLevel.INFO
+
+    print(f"Setting logging level to {level.value}")
+    config.set_logging_level(level.value)

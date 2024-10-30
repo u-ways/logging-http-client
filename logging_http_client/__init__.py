@@ -78,6 +78,7 @@ from .logging_http_client_config import (  # noqa: F401
     enable_response_body_logging,
     set_logging_level,
 )
+from .log_level import LogLevel  # noqa: F401
 
 
 def create(

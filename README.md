@@ -352,7 +352,7 @@ By default, the library logs at the 'INFO' level. To adjust this, use the set_lo
 ```python
 import logging_http_client
 
-logging_http_client.set_logging_level("DEBUG")
+logging_http_client.set_logging_level(logging_http_client.LogLevel.DEBUG)
 
 logging_http_client.create().get('https://www.python.org')
 # => Logs will be recorded at the DEBUG level now.
