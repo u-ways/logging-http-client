@@ -128,5 +128,4 @@ def set_logging_level(level: LogLevel) -> None:
     if not isinstance(level, LogLevel):
         level = LogLevel.INFO
 
-    print(f"Setting logging level to {level.value}")
     config.set_logging_level(level.value)
