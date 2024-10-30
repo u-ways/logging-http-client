@@ -6,10 +6,9 @@ from logging_http_client.logging_http_client_config import (
     disable_response_logging,
     enable_response_body_logging,
     set_logging_level,
+    LogLevel,
 )
 import logging_http_client.logging_http_client_config_globals as config
-
-level_map = {"INFO": 20, "DEBUG": 10, "WARNING": 30, "ERROR": 40, "CRITICAL": 50}
 
 
 @pytest.mark.parametrize("switch", [True, False])
@@ -36,16 +35,22 @@ def test_enable_response_body_logging(switch):
     assert config.is_response_body_logging_enabled() == switch
 
 
-@pytest.mark.parametrize("switch", [10, 20, 30, 40, 50])
-def test_set_logging_level(switch):
+@pytest.mark.parametrize("switch", [LogLevel.INFO, LogLevel.DEBUG, LogLevel.WARNING, LogLevel.ERROR, LogLevel.CRITICAL])
+def test_set_logging_level_enum(switch):
     set_logging_level(switch)
-    assert config.get_logging_level() == switch
+    assert config.get_logging_level() == switch.value
+
+
+@pytest.mark.parametrize("switch", [10, 20, 30, 40, 50])
+def test_set_logging_level_int(switch):
+    set_logging_level(switch)
+    assert config.get_logging_level() == 20
 
 
 @pytest.mark.parametrize("switch", ["INFO", "DEBUG", "WARNING", "ERROR", "CRITICAL"])
 def test_set_logging_level_string(switch):
     set_logging_level(switch)
-    assert config.get_logging_level() == level_map[switch]
+    assert config.get_logging_level() == 20
 
 
 @pytest.mark.parametrize("switch", ["INVALID", "INFODEBUG", 60, 11, 35, 45, 11010210120201, None])
