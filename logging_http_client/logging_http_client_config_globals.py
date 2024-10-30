@@ -5,6 +5,8 @@ We separate the configuration globals and getters from the main configuration mo
 avoid circular imports when using the configuration getters within the implementation code.
 """
 
+from logging_http_client.log_level import LogLevel
+
 # Correlation ID Provider =====================================================
 
 _correlation_id_provider = None
@@ -122,3 +124,18 @@ def set_request_body_logging_enabled(value: bool):
 def set_response_body_logging_enabled(value: bool):
     global _response_body_logging_enabled
     _response_body_logging_enabled = value
+
+
+# Request/Response Logging Toggle =============================================
+
+_logging_level: int = LogLevel.INFO.value
+
+
+def set_logging_level(value: int):
+    global _logging_level
+    _logging_level = value
+
+
+def get_logging_level():
+    global _logging_level
+    return _logging_level

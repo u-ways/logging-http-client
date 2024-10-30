@@ -75,7 +75,9 @@ class LoggingSession(Session):
                 request_logging_hook(logger, prepared)
             else:
                 if config.is_request_logging_enabled():
-                    logger.info(
+                    logging_level = config.get_logging_level()
+                    logger.log(
+                        level=logging_level,
                         msg="REQUEST",
                         extra=HttpLogRecord.request_processor(
                             source_system=source_system, request_id=request_id, request=prepared
@@ -90,8 +92,11 @@ class LoggingSession(Session):
                 response_logging_hook(logger, response)
             else:
                 if config.is_response_logging_enabled():
-                    logger.info(
-                        msg="RESPONSE", extra=HttpLogRecord.response_processor(request_id=request_id, response=response)
+                    logging_level = config.get_logging_level()
+                    logger.log(
+                        level=logging_level,
+                        msg="RESPONSE",
+                        extra=HttpLogRecord.response_processor(request_id=request_id, response=response),
                     )
 
             return response
