@@ -1,0 +1,20 @@
+site_name: Logging HTTP Client
+site_url: https://pypi.org/project/logging-http-client/
+repo_url: https://github.com/u-ways/logging-http-client/
+
+docs_dir: ../docs
+exclude_docs: |
+  - .readthedocs.yml
+  - mkdocs.yml
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+
+nav:
+  - Documentation: index.md
+  - Contributing: CONTRIBUTING.md
+  - License: LICENSE.md
+
+theme: material
