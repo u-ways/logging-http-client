@@ -7,6 +7,7 @@
 [![Style: Black](https://img.shields.io/badge/Style-Black-008be1.svg)](https://github.com/psf/black)
 [![PyPI - Version](https://img.shields.io/pypi/v/logging-http-client?color=ffd343)](https://pypi.org/project/logging-http-client/)
 [![PyPI - Downloads](https://img.shields.io/pypi/dm/logging-http-client?color=ffd343)](https://pypistats.org/packages/logging-http-client)
+[![Docs](https://img.shields.io/badge/ReadTheDocs-6e21d5.svg)](https://logging-http-client.readthedocs.io/en/latest/)
 
 A logging library built on top of the [requests](https://pypi.org/project/requests/) library to provide a familiar
 interface for sending HTTP requests with observability features out-of-the-box.
