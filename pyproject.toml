@@ -47,6 +47,11 @@ pytest-env = "^1.1.3"
 testcontainers = "^4.7.1"
 wiremock= "^2.6.1"
 
+[tool.poetry.group.docs.dependencies]
+mkdocs = "^1.6.1"
+mkdocstrings = "^0.27.0"
+mkdocs-material = "^9.5.44"
+
 [tool.black]
 line-length = 120
 
