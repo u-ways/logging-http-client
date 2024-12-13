@@ -51,8 +51,10 @@ install-poetry:
 setup: require-poetry require-pyenv configure-ide-settings enable-code-quality-pre-commit-hook
 	@echo "Setting up the project..."
 	@echo "Setting local shell Python version to $(PYTHON_VERSION)..."
+	@deactivate 2>/dev/null || true
 	@pyenv install -s $(PYTHON_VERSION)
 	@pyenv local $(PYTHON_VERSION)
+	@poetry env remove --all 2>/dev/null || true
 	@poetry config virtualenvs.prefer-active-python true
 	@echo "Installing Poetry dependencies..."
 	@poetry install
