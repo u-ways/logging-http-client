@@ -2,6 +2,7 @@ import inspect
 import logging
 import uuid
 from logging import LogRecord
+
 import pytest
 from requests import PreparedRequest, Response, Timeout, Session
 from wiremock.resources.mappings import HttpMethods
@@ -254,16 +255,12 @@ def test_client_should_support_traceability(wiremock_server, caplog):
 
 
 def test_client_should_raise_timeout_error_on_request_timeout(wiremock_server):
-    wiremock_server.for_endpoint(
-        "/create", method=HttpMethods.POST, return_status=201, return_body='{ "message": "done!" }', fixed_delay_ms=1500
-    )
+    wiremock_server.for_endpoint("/create", method=HttpMethods.POST, return_status=201, fixed_delay_ms=1500)
 
     with pytest.raises(Timeout):
         logging_http_client.create().post(
             url=wiremock_server.get_url("/create"),
             timeout=1,
-            headers={"accept": "application/json"},
-            json='{ "key": "value" }',
         )
 
 
