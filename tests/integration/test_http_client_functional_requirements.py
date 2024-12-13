@@ -254,10 +254,10 @@ def test_client_should_support_traceability(wiremock_server, caplog):
 
 
 def test_client_should_raise_timeout_error_on_request_timeout(wiremock_server):
-
     wiremock_server.for_endpoint(
-        "/create", method=HttpMethods.POST, return_status=201, return_body='{ "message": "done!" }', fixed_delay_ms=1000
+        "/create", method=HttpMethods.POST, return_status=201, return_body='{ "message": "done!" }', fixed_delay_ms=1500
     )
+
     with pytest.raises(Timeout):
         logging_http_client.create().post(
             url=wiremock_server.get_url("/create"),
