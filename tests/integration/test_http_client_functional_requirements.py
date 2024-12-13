@@ -94,14 +94,20 @@ def test_client_should_log_request_with_body_logging_enabled(wiremock_server, ca
     request_log, response_log = relevant_logs
 
     assert request_log.message == "REQUEST"
-    assert request_log.http["request_method"] == "POST"
-    assert request_log.http["request_headers"]["accept"] == "application/json"
-    assert request_log.http["request_body"] == '"{ \\"key\\": \\"value\\" }"'
+    if hasattr(request_log, "http"):
+        assert request_log.http["request_method"] == "POST"
+        assert request_log.http["request_headers"]["accept"] == "application/json"
+        assert request_log.http["request_body"] == '"{ \\"key\\": \\"value\\" }"'
+    else:
+        pytest.fail("Request log does not contain 'http' record attribute")
 
     assert response_log.message == "RESPONSE"
-    assert response_log.http["response_status"] == 201
-    assert response_log.http["response_headers"]["Content-Type"] == "application/json"
-    assert response_log.http["response_body"] == '{ "message": "done!" }'
+    if hasattr(response_log, "http"):
+        assert response_log.http["response_status"] == 201
+        assert response_log.http["response_headers"]["Content-Type"] == "application/json"
+        assert response_log.http["response_body"] == '{ "message": "done!" }'
+    else:
+        pytest.fail("Response log does not contain 'http' record attribute")
 
 
 def test_client_should_log_with_logging_disabled(wiremock_server, caplog):
