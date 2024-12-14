@@ -10,7 +10,6 @@ from wiremock.resources.mappings import HttpMethods
 import logging_http_client
 from http_headers import X_REQUEST_ID_HEADER, X_SOURCE_HEADER, X_CORRELATION_ID_HEADER
 from logging_http_client import HttpLogRecord
-from logging_http_client.http_methods import HttpMethod
 
 
 def test_client_returns_correct_response_details(wiremock_server):
@@ -130,7 +129,7 @@ def test_client_should_log_with_custom_request_logging_hook(wiremock_server, cap
     def custom_request_logging_hook(logger: logging.Logger, request: PreparedRequest):
         logger.debug("Custom request logging for %s", request.url)
 
-    logging_http_client.set_custom_request_logging_hook(custom_request_logging_hook)
+    logging_http_client.set_request_logging_hooks([custom_request_logging_hook])
 
     wiremock_server.for_endpoint("/custom")
 
@@ -152,7 +151,7 @@ def test_client_should_log_with_custom_response_logging_hook(wiremock_server, ca
     def custom_response_logging_hook(logger: logging.Logger, response: Response):
         logger.debug("Custom response logging for %s", response.url)
 
-    logging_http_client.set_custom_response_logging_hook(custom_response_logging_hook)
+    logging_http_client.set_response_logging_hooks([custom_response_logging_hook])
 
     wiremock_server.for_endpoint("/custom")
 
@@ -170,6 +169,58 @@ def test_client_should_log_with_custom_response_logging_hook(wiremock_server, ca
     assert response_log.message == "Custom response logging for " + wiremock_server.get_url("/custom")
 
 
+def test_client_should_log_with_multiple_request_logging_hooks(wiremock_server, caplog):
+    def first_request_logging_hook(logger: logging.Logger, request: PreparedRequest):
+        logger.debug("First request hook triggered for %s", request.url)
+
+    def second_request_logging_hook(logger: logging.Logger, request: PreparedRequest):
+        logger.debug("Second request hook triggered for %s", request.url)
+
+    logging_http_client.set_request_logging_hooks([first_request_logging_hook, second_request_logging_hook])
+
+    wiremock_server.for_endpoint("/multiple_hooks")
+
+    with caplog.at_level(logging.DEBUG):
+        logging_http_client.create().get(
+            url=wiremock_server.get_url("/multiple_hooks"),
+        )
+
+    first_hook_logs = [record for record in caplog.records if "First request hook triggered" in record.message]
+    second_hook_logs = [record for record in caplog.records if "Second request hook triggered" in record.message]
+
+    assert len(first_hook_logs) == 1, f"Expected logs from first request hook, found {len(first_hook_logs)}"
+    assert len(second_hook_logs) == 1, f"Expected logs from second request hook, found {len(second_hook_logs)}"
+    assert wiremock_server.get_url("/multiple_hooks") in first_hook_logs[0].message
+    assert wiremock_server.get_url("/multiple_hooks") in second_hook_logs[0].message
+
+
+def test_client_should_log_with_multiple_response_logging_hooks(wiremock_server, caplog):
+    def first_response_logging_hook(logger: logging.Logger, response: Response):
+        logger.debug("First response hook triggered for %s with status %s", response.url, response.status_code)
+
+    def second_response_logging_hook(logger: logging.Logger, response: Response):
+        logger.debug("Second response hook triggered for %s with status %s", response.url, response.status_code)
+
+    logging_http_client.set_response_logging_hooks([first_response_logging_hook, second_response_logging_hook])
+
+    wiremock_server.for_endpoint("/multiple_hooks", return_status=202, return_body="test response")
+
+    with caplog.at_level(logging.DEBUG):
+        logging_http_client.create().get(
+            url=wiremock_server.get_url("/multiple_hooks"),
+        )
+
+    first_hook_logs = [record for record in caplog.records if "First response hook triggered" in record.message]
+    second_hook_logs = [record for record in caplog.records if "Second response hook triggered" in record.message]
+
+    assert len(first_hook_logs) == 1, f"Expected logs from first response hook, found {len(first_hook_logs)}"
+    assert len(second_hook_logs) == 1, f"Expected logs from second response hook, found {len(second_hook_logs)}"
+    assert wiremock_server.get_url("/multiple_hooks") in first_hook_logs[0].message
+    assert "202" in first_hook_logs[0].message
+    assert wiremock_server.get_url("/multiple_hooks") in second_hook_logs[0].message
+    assert "202" in second_hook_logs[0].message
+
+
 def test_client_should_obscure_request_details(wiremock_server, caplog):
     def request_log_record_obscurer(record: HttpLogRecord) -> HttpLogRecord:
         record.request_method = "REDACTED"
@@ -177,7 +228,7 @@ def test_client_should_obscure_request_details(wiremock_server, caplog):
             record.request_headers["Authorization"] = "Bearer ****"
         return record
 
-    logging_http_client.set_request_log_record_obscurer(request_log_record_obscurer)
+    logging_http_client.set_request_log_record_obscurers([request_log_record_obscurer])
 
     wiremock_server.for_endpoint("/secret")
 
@@ -207,7 +258,7 @@ def test_client_should_obscure_response_details(wiremock_server, caplog):
             record.response_body = record.response_body.replace("SENSITIVE", "****")
         return record
 
-    logging_http_client.set_response_log_record_obscurer(response_log_record_obscurer)
+    logging_http_client.set_response_log_record_obscurers([response_log_record_obscurer])
     logging_http_client.enable_response_body_logging()
 
     wiremock_server.for_endpoint(
@@ -228,6 +279,74 @@ def test_client_should_obscure_response_details(wiremock_server, caplog):
     if hasattr(response_log, "http"):
         assert response_log.http["response_status"] == 999
         assert response_log.http["response_body"] == "some response body with **** information"
+    else:
+        pytest.fail("Response log does not contain 'http' record attribute")
+
+
+def test_client_should_obscure_request_details_with_multiple_obscurers(wiremock_server, caplog):
+    def first_request_obscurer(record: HttpLogRecord) -> HttpLogRecord:
+        if record.request_headers.get("Authorization"):
+            record.request_headers["Authorization"] = "Bearer ****"
+        return record
+
+    def second_request_obscurer(record: HttpLogRecord) -> HttpLogRecord:
+        if record.request_body:
+            record.request_body = "OBSCURED_BODY"
+        return record
+
+    logging_http_client.set_request_log_record_obscurers([first_request_obscurer, second_request_obscurer])
+    logging_http_client.enable_request_body_logging(True)
+
+    wiremock_server.for_endpoint("/secret")
+    with caplog.at_level(logging.INFO):
+        logging_http_client.create().post(
+            url=wiremock_server.get_url("/secret"),
+            headers={"accept": "application/json", "Authorization": "Bearer secret"},
+            json={"sensitive": "data"},
+        )
+
+    relevant_logs = [record for record in caplog.records if record.message == "REQUEST"]
+    assert len(relevant_logs) == 1, f"Expected 1 request log, found {len(relevant_logs)}"
+
+    request_log = relevant_logs.pop()
+    if hasattr(request_log, "http"):
+        assert (
+            request_log.http["request_headers"]["Authorization"] == "Bearer ****"
+        ), "Expected the Authorization header to be obscured"
+        assert request_log.http["request_body"] == "OBSCURED_BODY", "Expected the request body to be obscured"
+    else:
+        pytest.fail("Request log does not contain 'http' record attribute")
+
+
+def test_client_should_obscure_response_details_with_multiple_obscurers(wiremock_server, caplog):
+    def first_response_obscurer(record: HttpLogRecord) -> HttpLogRecord:
+        if record.response_body:
+            record.response_body = record.response_body.replace("secret", "****")
+        return record
+
+    def second_response_obscurer(record: HttpLogRecord) -> HttpLogRecord:
+        record.response_status = 999
+        return record
+
+    logging_http_client.set_response_log_record_obscurers([first_response_obscurer, second_response_obscurer])
+    logging_http_client.enable_response_body_logging(True)
+
+    wiremock_server.for_endpoint("/classified", return_status=200, return_body="this is a secret message")
+
+    with caplog.at_level(logging.INFO):
+        logging_http_client.create().get(
+            url=wiremock_server.get_url("/classified"),
+        )
+
+    relevant_logs = [record for record in caplog.records if record.message == "RESPONSE"]
+    assert len(relevant_logs) == 1, f"Expected 1 response log, found {len(relevant_logs)}"
+
+    response_log = relevant_logs.pop()
+    if hasattr(response_log, "http"):
+        assert response_log.http["response_status"] == 999, "Expected the response status to be changed to 999"
+        assert (
+            response_log.http["response_body"] == "this is a **** message"
+        ), "Expected the response body to have secret obscured"
     else:
         pytest.fail("Response log does not contain 'http' record attribute")
 
@@ -270,11 +389,9 @@ def test_client_should_raise_timeout_error_on_request_timeout(wiremock_server):
         )
 
 
-@pytest.mark.parametrize("http_method", list(HttpMethod))
+@pytest.mark.parametrize("http_method", [HttpMethods.GET, HttpMethods.POST, HttpMethods.PUT, HttpMethods.DELETE])
 def test_client_does_not_raise_exception_for_expected_optional_arguments(wiremock_server, http_method):
-    wiremock_server.for_endpoint(
-        "/create", method=http_method.value, return_status=201, return_body='{ "message": "done!" }'
-    )
+    wiremock_server.for_endpoint("/create", method=http_method, return_status=201, return_body='{ "message": "done!" }')
 
     optional_arguments = {
         key: None
@@ -282,7 +399,7 @@ def test_client_does_not_raise_exception_for_expected_optional_arguments(wiremoc
         if key not in ["self", "method", "url", "headers"]
     }
 
-    request_func = getattr(logging_http_client.create(), http_method.value.lower())
+    request_func = getattr(logging_http_client.create(), http_method.lower())
 
     request_func(
         url=wiremock_server.get_url("/create"),

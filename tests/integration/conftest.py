@@ -7,10 +7,8 @@ from wiremock.testing.testcontainer import wiremock_container
 @pytest.fixture(scope="session")
 def wiremock_server():
     with wiremock_container(secure=False) as server:
-        # Configure the base URL for the WireMock server
         Config.base_url = server.get_url("__admin")
 
-        # Add a method to the wm object for adding mappings
         def for_endpoint(
             url,
             method=HttpMethods.GET,
@@ -34,7 +32,6 @@ def wiremock_server():
                 )
             )
 
-        # Attach the method to the wm instance
         server.for_endpoint = for_endpoint
 
         yield server

@@ -3,6 +3,7 @@ import logging
 import pytest
 
 import logging_http_client_config
+from logging_default_hooks import default_response_logging_hook, default_request_logging_hook
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -35,14 +36,16 @@ def reset_library_globals_after_each_test():
     """
     logging_http_client_config.set_correlation_id_provider(None)
 
-    logging_http_client_config.set_request_log_record_obscurer(None)
-    logging_http_client_config.set_response_log_record_obscurer(None)
+    logging_http_client_config.set_request_log_record_obscurers([])
+    logging_http_client_config.set_response_log_record_obscurers([])
 
-    logging_http_client_config.set_custom_request_logging_hook(None)
-    logging_http_client_config.set_custom_response_logging_hook(None)
+    logging_http_client_config.set_default_hooks_logging_level(logging.INFO)
+
+    logging_http_client_config.set_request_logging_hooks([default_request_logging_hook])
+    logging_http_client_config.set_response_logging_hooks([default_response_logging_hook])
 
     logging_http_client_config.disable_request_logging(False)
-    logging_http_client_config.enable_request_body_logging(False)
-
     logging_http_client_config.disable_response_logging(False)
+
+    logging_http_client_config.enable_request_body_logging(False)
     logging_http_client_config.enable_response_body_logging(False)

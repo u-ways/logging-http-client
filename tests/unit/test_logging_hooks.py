@@ -1,77 +1,103 @@
+import pytest
 from requests import Response, PreparedRequest
 
+import logging_http_client.logging_http_client_config_globals as config
 from logging_http_client.logging_http_client_config import (
     set_custom_request_logging_hook,
     set_custom_response_logging_hook,
+    set_request_logging_hooks,
+    set_response_logging_hooks,
 )
-import logging_http_client.logging_http_client_config_globals as config
 
 
-def mock_request_hook(_, request: PreparedRequest) -> None:
+def request_hook(_, request: PreparedRequest) -> None:
     print(f"Request method: {request.method}")
 
 
-def mock_response_hook(_, response: Response) -> None:
+def another_request_hook(_, request: PreparedRequest) -> None:
+    print(f"Another request method: {request.method}")
+
+
+def response_hook(_, response: Response) -> None:
     print(f"Response status code: {response.status_code}")
 
 
-# Global Getters and Setters Smoke Tests ======================================
+def another_response_hook(_, response: Response) -> None:
+    print(f"Another response status code: {response.status_code}")
 
 
-def test_default_request_logging_hook_is_none():
-    assert config.get_custom_request_logging_hook() is None
+# Tests for setting hooks ==================================================================================
 
 
-def test_default_response_logging_hook_is_none():
-    assert config.get_custom_response_logging_hook() is None
+def test_set_request_logging_hooks():
+    set_request_logging_hooks([request_hook, another_request_hook])
+    hooks = config.get_request_logging_hooks()
+    assert hooks == [request_hook, another_request_hook]
 
 
-def test_set_custom_request_logging_hook():
-    set_custom_request_logging_hook(mock_request_hook)
-    assert config.get_custom_request_logging_hook() is mock_request_hook
+def test_set_response_logging_hooks():
+    set_response_logging_hooks([response_hook, another_response_hook])
+    hooks = config.get_response_logging_hooks()
+    assert hooks == [response_hook, another_response_hook]
 
 
-def test_set_custom_response_logging_hook():
-    set_custom_response_logging_hook(mock_response_hook)
-    assert config.get_custom_response_logging_hook() is mock_response_hook
+def test_reset_request_logging_hooks():
+    set_request_logging_hooks([request_hook])
+    set_request_logging_hooks([])
+    hooks = config.get_request_logging_hooks()
+    assert hooks == []
 
 
-def test_reset_request_logging_hook():
-    set_custom_request_logging_hook(mock_request_hook)
-    set_custom_request_logging_hook(None)
-    assert config.get_custom_request_logging_hook() is None
+def test_reset_response_logging_hooks():
+    set_response_logging_hooks([response_hook])
+    set_response_logging_hooks([])
+    hooks = config.get_response_logging_hooks()
+    assert hooks == []
 
 
-def test_reset_response_logging_hook():
-    set_custom_response_logging_hook(mock_response_hook)
-    set_custom_response_logging_hook(None)
-    assert config.get_custom_response_logging_hook() is None
+# Tests for hook functionality ==============================================================================
 
 
-# Functionality Tests =========================================================
-
-
-def test_request_logging_hook_functionality(capsys):
-    set_custom_request_logging_hook(mock_request_hook)
-
+def test_request_logging_hooks_functionality(capsys):
+    set_request_logging_hooks([request_hook, another_request_hook])
     request = PreparedRequest()
     request.method = "GET"
 
-    hook = config.get_custom_request_logging_hook()
-    hook(None, request)
+    for hook in config.get_request_logging_hooks():
+        hook(None, request)
 
     captured = capsys.readouterr()
     assert "Request method: GET" in captured.out
+    assert "Another request method: GET" in captured.out
 
 
-def test_response_logging_hook_functionality(capsys):
-    set_custom_response_logging_hook(mock_response_hook)
-
+def test_response_logging_hooks_functionality(capsys):
+    set_response_logging_hooks([response_hook, another_response_hook])
     response = Response()
     response.status_code = 200
 
-    hook = config.get_custom_response_logging_hook()
-    hook(None, response)
+    for hook in config.get_response_logging_hooks():
+        hook(None, response)
 
     captured = capsys.readouterr()
     assert "Response status code: 200" in captured.out
+    assert "Another response status code: 200" in captured.out
+
+
+# DEPRECATED FUNCTIONS TESTS ==========================================================================================
+
+
+def test_set_custom_request_logging_hook_deprecated():
+    with pytest.warns(DeprecationWarning, match="set_custom_request_logging_hook is deprecated"):
+        set_custom_request_logging_hook(request_hook)
+    # Check that a single hook is set as a list
+    hooks = config.get_request_logging_hooks()
+    assert hooks == [request_hook]
+
+
+def test_set_custom_response_logging_hook_deprecated():
+    with pytest.warns(DeprecationWarning, match="set_custom_response_logging_hook is deprecated"):
+        set_custom_response_logging_hook(response_hook)
+    # Check that a single hook is set as a list
+    hooks = config.get_response_logging_hooks()
+    assert hooks == [response_hook]
