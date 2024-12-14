@@ -3,8 +3,9 @@ from __future__ import annotations
 import logging
 from typing import Mapping
 
+from requests import Session
+
 from logging_http_client.http_headers import with_source_header
-from logging_http_client.http_methods import HttpMethod
 from logging_http_client.http_session import LoggingSession
 
 
@@ -13,55 +14,41 @@ class LoggingHttpClient:
     A client that allows logging of HTTP requests and responses, with an option to use a reusable session.
     """
 
-    _logger: logging.Logger
-    _reusable_session: bool
-    _shared_headers: Mapping[str, str | bytes]
     _source: str | None
+    _reusable_session: bool
+    _logger: logging.Logger
+    _shared_headers: Mapping[str, str | bytes]
+
     _session: LoggingSession | None
 
     def __init__(
         self,
-        logger: logging.Logger,
-        reusable_session: bool = False,
-        shared_headers: Mapping[str, str | bytes] = None,
         source: str = None,
+        reusable_session: bool = False,
+        logger: logging.Logger = logging.getLogger(),
+        shared_headers: Mapping[str, str | bytes] = None,
     ) -> None:
-        self._logger = logger
-        self._reusable_session = reusable_session
-        self._shared_headers = shared_headers if shared_headers is not None else {}
         self._source = source
+        self._reusable_session = reusable_session
+        self._logger = logger
+        self._shared_headers = shared_headers if shared_headers is not None else {}
 
-        if self._reusable_session is not None:
-            self._session = LoggingSession(self._source, self._logger)
-            self._session.headers.update(self._shared_headers)
-            if self._source is not None:
-                self._session.headers.update(with_source_header(self._source))
-        else:
-            self._session = None
+        if self._reusable_session:
+            reusable = LoggingSession(source, logger)
+            self._session = self._decorate_session(reusable)
 
     def __getattr__(self, name: str):
         """
-        Dynamically handle the HTTP methods like GET, POST, PUT, DELETE, etc.
+        Dynamically get an attribute from the session.
 
         :param name: The name of the attribute to get.
-        :return: A lambda function that sends a request using the specified HTTP method.
-        :raises AttributeError: If the attribute name is not a valid HTTP method.
+        :return: The attribute.
+        :raises AttributeError: If the attribute does not exist.
         """
-        method: HttpMethod | None = HttpMethod.__members__.get(name.upper())
-
-        if method is not None:
-            if self._reusable_session is True:
-                return lambda url, **kwargs: self._session.request(method=str(method.value), url=url, **kwargs)
-            else:
-
-                def request_with_single_use_session(url, **kwargs):
-                    with LoggingSession(self._source, self._logger) as session:
-                        session.headers.update(self._shared_headers)
-                        return session.request(method=str(method.value), url=url, **kwargs)
-
-                return request_with_single_use_session
+        if name in Session.__dict__:
+            return getattr(self.session, name)
         else:
-            raise AttributeError(f"Attribute requested is not a valid HTTP method: {name}")
+            raise AttributeError(f"Unsupported attribute: '{name}'")
 
     def __del__(self) -> None:
         """
@@ -69,6 +56,24 @@ class LoggingHttpClient:
         """
         if self._session is not None:
             self._session.close()
+
+    @property
+    def session(self) -> LoggingSession:
+        """
+        Get the session that is used to send requests.
+
+        If the client is configured to use a reusable session,
+        this will return the same session for every request.
+
+        Otherwise, a new session will be created for each request.
+
+        :return: The session.
+        """
+        if self._reusable_session:
+            return self._session
+        else:
+            disposable = LoggingSession(self._source, self._logger)
+            return self._decorate_session(disposable)
 
     @property
     def shared_headers(self) -> Mapping[str, str | bytes]:
@@ -98,3 +103,16 @@ class LoggingHttpClient:
         self._shared_headers = {}
         if self._reusable_session is not None:
             self._session.headers.update(self._shared_headers)
+
+    def _decorate_session(self, session: LoggingSession) -> LoggingSession:
+        """
+        Decorate the session with the shared headers and source.
+
+        :param session: The session to decorate.
+        :return: The decorated session.
+        """
+        if self._source is not None:
+            session.headers.update(with_source_header(self._source))
+        if self._shared_headers:
+            session.headers.update(self._shared_headers)
+        return session
