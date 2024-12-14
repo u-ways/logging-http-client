@@ -82,7 +82,10 @@ from .log_level import LogLevel  # noqa: F401
 
 
 def create(
-    source: str = None, reusable_session: bool = True, logger: logging.Logger = logging.getLogger()
+    source: str = None,
+    reusable_session: bool = True,
+    logger: logging.Logger = logging.getLogger(),
+    shared_headers: Mapping[str, str | bytes] = None,
 ) -> LoggingHttpClient:
     """
     Factory function to create a new logging HTTP client instance.
@@ -90,12 +93,14 @@ def create(
     :param source: The source of the request. This is used to identify the source/system of the request.
     :param reusable_session: Whether to use a reusable session for all requests.
     :param logger: The logger to use for logging requests and responses.
+    :param shared_headers: The headers to include with every request.
     :return: A new LoggingHttpClient instance.
     """
     return LoggingHttpClient(
         source=source,
         logger=logger,
         reusable_session=reusable_session,
+        shared_headers=shared_headers,
     )
 
 
