@@ -104,6 +104,18 @@ def create(
     )
 
 
+def request(method, url, **kwargs) -> Response:
+    """
+    Sends a request to the specified URL.
+
+    :param method: The HTTP method to use.
+    :param url: The URL to send the request to.
+    :param kwargs: Additional arguments to pass to the request method.
+    :return: A new LoggingHttpClient instance.
+    """
+    return create(reusable_session=False).request(method, url, **kwargs)
+
+
 def get(url: str, **kwargs) -> Response:
     """
     Sends a GET request to the specified URL.
