@@ -17,6 +17,7 @@ class BaseLogRecord:
 
     def to_dict(self) -> Dict[str, Primitive]:
         # Clean dictionary, removing empty and default values
+        # noinspection PyTypeChecker
         to_dict_cleaned = {k: v for k, v in asdict(self).items() if v not in (None, {}, [], "", 0, 0.0)}
         return to_dict_cleaned
 
@@ -52,8 +53,8 @@ class HttpLogRecord(BaseLogRecord):
             else:
                 record.request_body = request.body
 
-        obscurer = config.get_request_log_record_obscurer()
-        record = obscurer(record) if obscurer is not None else record
+        for obscurer in config.get_request_log_record_obscurers():
+            record = obscurer(record)
 
         return {"http": record.to_dict()}
 
@@ -69,7 +70,7 @@ class HttpLogRecord(BaseLogRecord):
         if response.content and config.is_response_body_logging_enabled():
             record.response_body = response.content.decode()
 
-        obscurer = config.get_response_log_record_obscurer()
-        record = obscurer(record) if obscurer is not None else record
+        for obscurer in config.get_response_log_record_obscurers():
+            record = obscurer(record)
 
         return {"http": record.to_dict()}
