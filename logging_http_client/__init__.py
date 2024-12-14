@@ -37,6 +37,7 @@ Full documentation is at <https://requests.readthedocs.io>.
 """
 
 import logging
+from typing import Mapping
 
 # noinspection PyUnresolvedReferences
 from requests import packages, utils  # noqa: F401
@@ -64,21 +65,29 @@ from requests.sessions import Session, session  # noqa: F401
 # noinspection PyUnresolvedReferences
 from requests.status_codes import codes  # noqa: F401
 
+from .logging_default_hooks import default_request_logging_hook, default_response_logging_hook
 from .http_log_record import HttpLogRecord  # noqa: F401
 from .logging_http_client_class import LoggingHttpClient
 from .logging_http_client_config import (  # noqa: F401
     set_correlation_id_provider,
+    set_request_log_record_obscurers,
+    set_response_log_record_obscurers,
     set_request_log_record_obscurer,
     set_response_log_record_obscurer,
+    set_request_logging_hooks,
+    set_response_logging_hooks,
     set_custom_request_logging_hook,
     set_custom_response_logging_hook,
     disable_request_logging,
     disable_response_logging,
     enable_request_body_logging,
     enable_response_body_logging,
-    set_logging_level,
+    set_default_hooks_logging_level,
 )
-from .log_level import LogLevel  # noqa: F401
+
+set_default_hooks_logging_level(logging.INFO)
+set_request_logging_hooks([default_request_logging_hook])
+set_response_logging_hooks([default_response_logging_hook])
 
 
 def create(

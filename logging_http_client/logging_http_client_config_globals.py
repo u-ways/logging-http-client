@@ -5,7 +5,7 @@ We separate the configuration globals and getters from the main configuration mo
 avoid circular imports when using the configuration getters within the implementation code.
 """
 
-from logging_http_client.log_level import LogLevel
+import logging
 
 # Correlation ID Provider =====================================================
 
@@ -24,54 +24,54 @@ def set_correlation_id_provider(value):
 
 # Request/Response Log Record Obscurers ======================================
 
-_request_log_record_obscurer = None
-_response_log_record_obscurer = None
+_request_log_record_obscurers: list = []
+_response_log_record_obscurers: list = []
 
 
-def get_request_log_record_obscurer():
-    global _request_log_record_obscurer
-    return _request_log_record_obscurer
+def get_request_log_record_obscurers():
+    global _request_log_record_obscurers
+    return _request_log_record_obscurers
 
 
-def get_response_log_record_obscurer():
-    global _response_log_record_obscurer
-    return _response_log_record_obscurer
+def get_response_log_record_obscurers():
+    global _response_log_record_obscurers
+    return _response_log_record_obscurers
 
 
-def set_request_log_record_obscurer(value):
-    global _request_log_record_obscurer
-    _request_log_record_obscurer = value
+def set_request_log_record_obscurers(value):
+    global _request_log_record_obscurers
+    _request_log_record_obscurers = value
 
 
-def set_response_log_record_obscurer(value):
-    global _response_log_record_obscurer
-    _response_log_record_obscurer = value
+def set_response_log_record_obscurers(value):
+    global _response_log_record_obscurers
+    _response_log_record_obscurers = value
 
 
 # Request/Response Hooks =====================================================
 
-_request_logging_hook = None
-_response_logging_hook = None
+_request_logging_hooks: list = []
+_response_logging_hooks: list = []
 
 
-def get_custom_request_logging_hook():
-    global _request_logging_hook
-    return _request_logging_hook
+def get_request_logging_hooks():
+    global _request_logging_hooks
+    return _request_logging_hooks
 
 
-def get_custom_response_logging_hook():
-    global _response_logging_hook
-    return _response_logging_hook
+def get_response_logging_hooks():
+    global _response_logging_hooks
+    return _response_logging_hooks
 
 
-def set_custom_request_logging_hook(value):
-    global _request_logging_hook
-    _request_logging_hook = value
+def set_request_logging_hooks(value):
+    global _request_logging_hooks
+    _request_logging_hooks = value
 
 
-def set_custom_response_logging_hook(value):
-    global _response_logging_hook
-    _response_logging_hook = value
+def set_response_logging_hooks(value):
+    global _response_logging_hooks
+    _response_logging_hooks = value
 
 
 # Request/Response Logging Toggle =============================================
@@ -126,16 +126,16 @@ def set_response_body_logging_enabled(value: bool):
     _response_body_logging_enabled = value
 
 
-# Request/Response Logging Toggle =============================================
+# Default Hooks Logging Level =============================================
 
-_logging_level: int = LogLevel.INFO.value
-
-
-def set_logging_level(value: int):
-    global _logging_level
-    _logging_level = value
+_default_hooks_logging_level: int = logging.INFO
 
 
-def get_logging_level():
-    global _logging_level
-    return _logging_level
+def set_default_hooks_logging_level(value: int):
+    global _default_hooks_logging_level
+    _default_hooks_logging_level = value
+
+
+def get_default_hooks_logging_level():
+    global _default_hooks_logging_level
+    return _default_hooks_logging_level
