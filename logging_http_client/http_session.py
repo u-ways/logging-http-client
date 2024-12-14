@@ -1,104 +1,135 @@
-import inspect
+import copy
 import uuid
-from functools import wraps
 from logging import Logger
-from typing import KeysView
 
 from requests import Session, Response, Request, PreparedRequest
+from typing_extensions import override
 
 import logging_http_client.logging_http_client_config_globals as config
-from logging_http_client.http_headers import (
-    X_SOURCE_HEADER,
-    X_REQUEST_ID_HEADER,
-    HEADERS_KWARG,
-    X_CORRELATION_ID_HEADER,
-)
-from logging_http_client.http_log_record import HttpLogRecord
+from http_headers import X_REQUEST_ID_HEADER, X_CORRELATION_ID_HEADER, X_SOURCE_HEADER
 
 
 class LoggingSession(Session):
     """
-    A subclass of requests.Session that logs the request and response details.
+    A subclass of :class:`requests.Session` decorates the request and response details
+    in the :meth:`requests.sessions.Session.request <requests.sessions.Session.request>` method.
     """
 
-    REQUEST_CLASS_PARAMS: KeysView[str] = inspect.signature(Request).parameters.keys()
+    _logger: Logger
+    _source: str
 
     def __init__(self, source: str, logger: Logger) -> None:
         super().__init__()
 
-        methods_to_decorate = [
-            self.request,
-            self.get,
-            self.post,
-            self.put,
-            self.delete,
-            self.patch,
-            self.head,
-            self.options,
-        ]
+        self._source = source
+        self._logger = logger
 
-        for method in methods_to_decorate:
-            method_name = method.__name__
-            decorated_method = self.decorate(source, logger, method)
-            setattr(self, method_name, decorated_method)
+    @override
+    def request(
+        self,
+        method,
+        url,
+        params=None,
+        data=None,
+        headers=None,
+        cookies=None,
+        files=None,
+        auth=None,
+        timeout=None,
+        allow_redirects=True,
+        proxies=None,
+        hooks=None,
+        stream=None,
+        verify=None,
+        cert=None,
+        json=None,
+    ) -> Response:
+        """
+        Delegates the request call to a prepared request to wire our observability configurations.
+        """
+        prepared_request = self.prepare_request(
+            Request(
+                method=method,
+                url=url,
+                headers=headers,
+                files=files,
+                data=data,
+                params=params,
+                auth=auth,
+                cookies=cookies,
+                hooks=hooks,
+                json=json,
+            )
+        )
+        response = self.send(
+            request=prepared_request,
+            stream=stream,
+            verify=verify,
+            proxies=proxies,
+            cert=cert,
+            timeout=timeout,
+            allow_redirects=allow_redirects,
+        )
+        return response
 
-    def decorate(self, source: str, logger: Logger, original_method: callable) -> callable:
-        @wraps(original_method)
-        def _apply(**kwargs) -> Response:
-            request_object_kwargs = {k: v for k, v in kwargs.items() if k in self.REQUEST_CLASS_PARAMS}
-            req = Request(**request_object_kwargs)
-            prepared: PreparedRequest = self.prepare_request(req)
+    @override
+    def send(self, request: PreparedRequest, **kwargs) -> Response:
+        """
+        We override the send method to apply our logging hooks before and after the request is made.
+
+        NOTE:
+            The logging hooks are applied BEFORE (request) and AFTER (response) the request is made.
+            In the event of a hook exception, the request will NOT be blocked. Instead, we gracefully
+            catch the exception and log it to avoid disturbing the request/response flow.
+        """
+        self._run_logging_request_hooks(request)
+        response = super().send(request, **kwargs)
+        self._run_logging_response_hooks(response)
+        return response
+
+    @override
+    def prepare_request(self, request) -> PreparedRequest:
+        """
+        Prepares the request by adding the observability headers to the request.
+
+        NOTE:
+            The observability headers are added to the request if they do NOT exist
+            in the request headers. The request headers are then updated based on
+            the set client configuration. If an exception occurs during the preparation
+            of the request, we catch the exception and log it to avoid disturbing the
+            request flow.
+        """
+        prepared = super().prepare_request(request)
+        try:
             request_id = prepared.headers.get(X_REQUEST_ID_HEADER, None)
             correlation_id = prepared.headers.get(X_CORRELATION_ID_HEADER, None)
             source_system = prepared.headers.get(X_SOURCE_HEADER, None)
 
-            kwargs.setdefault(HEADERS_KWARG, {})
+            correlation_id_provider = config.get_correlation_id_provider()
 
             if request_id is None:
-                kwargs[HEADERS_KWARG][X_REQUEST_ID_HEADER] = str(uuid.uuid4())
-                request_id = kwargs[HEADERS_KWARG][X_REQUEST_ID_HEADER]
-                prepared.headers.update({X_REQUEST_ID_HEADER: request_id})
-
-            correlation_id_provider = config.get_correlation_id_provider()
+                prepared.headers.update({X_REQUEST_ID_HEADER: str(uuid.uuid4())})
+            if source_system is None and self._source is not None:
+                prepared.headers.update({X_SOURCE_HEADER: self._source})
             if correlation_id is None and correlation_id_provider is not None:
-                kwargs[HEADERS_KWARG][X_CORRELATION_ID_HEADER] = correlation_id_provider()
-                correlation_id = kwargs[HEADERS_KWARG][X_CORRELATION_ID_HEADER]
-                prepared.headers.update({X_CORRELATION_ID_HEADER: correlation_id})
+                prepared.headers.update({X_CORRELATION_ID_HEADER: correlation_id_provider()})
+        except Exception as e:
+            self._logger.exception("Error preparing observability request headers", exc_info=e)
+        finally:
+            return prepared
 
-            if source_system is None:
-                kwargs[HEADERS_KWARG][X_SOURCE_HEADER] = source
-                source_system = kwargs[HEADERS_KWARG][X_SOURCE_HEADER]
-                prepared.headers.update({X_SOURCE_HEADER: source_system})
+    def _run_logging_request_hooks(self, request: PreparedRequest) -> None:
+        if config.is_request_logging_enabled():
+            try:
+                for hook in config.get_request_logging_hooks():
+                    hook(self._logger, copy.deepcopy(request))
+            except Exception as e:
+                self._logger.exception("Error applying request logging hooks", exc_info=e)
 
-            request_logging_hook = config.get_custom_request_logging_hook()
-            if request_logging_hook is not None:
-                request_logging_hook(logger, prepared)
-            else:
-                if config.is_request_logging_enabled():
-                    logging_level = config.get_logging_level()
-                    logger.log(
-                        level=logging_level,
-                        msg="REQUEST",
-                        extra=HttpLogRecord.request_processor(
-                            source_system=source_system, request_id=request_id, request=prepared
-                        ),
-                    )
-
-            # Call the original method... (with modified **kwargs)
-            response: Response = original_method(**kwargs)
-
-            response_logging_hook = config.get_custom_response_logging_hook()
-            if response_logging_hook is not None:
-                response_logging_hook(logger, response)
-            else:
-                if config.is_response_logging_enabled():
-                    logging_level = config.get_logging_level()
-                    logger.log(
-                        level=logging_level,
-                        msg="RESPONSE",
-                        extra=HttpLogRecord.response_processor(request_id=request_id, response=response),
-                    )
-
-            return response
-
-        return _apply
+    def _run_logging_response_hooks(self, response: Response) -> None:
+        if config.is_response_logging_enabled():
+            try:
+                for hook in config.get_response_logging_hooks():
+                    hook(self._logger, copy.deepcopy(response))
+            except Exception as e:
+                self._logger.exception("Error applying response logging hooks", exc_info=e)
