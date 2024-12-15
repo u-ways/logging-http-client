@@ -89,10 +89,11 @@ def test_request_obscurers_functionality():
     request = PreparedRequest()
     request.method = "POST"
     request.url = "http://example.com"
-    request.headers = {"Authorization": "secret"}
+    # noinspection PyTypeChecker
+    request.headers = {"Authorization": "secret", "X-Request-Id": "req-123", "X-Source": "TEST_SYSTEM"}
     request.body = "sensitive_data"
 
-    result = HttpLogRecord.request_processor("TEST_SYSTEM", "req-123", request)
+    result = HttpLogRecord.from_request(request)
     http_data = result["http"]
 
     assert http_data["request_headers"]["X-Request-Obscured"] == "******"
@@ -107,7 +108,12 @@ def test_response_obscurers_functionality():
     response._content = b"original_response_body"
     response.elapsed = type("Elapsed", (object,), {"microseconds": 5000})()
 
-    result = HttpLogRecord.response_processor("req-123", response)
+    request = PreparedRequest()
+    # noinspection PyTypeChecker
+    request.headers = {"X-Request-Id": "req-123"}
+    response.request = request
+
+    result = HttpLogRecord.from_response(response)
     http_data = result["http"]
 
     assert http_data["response_body"] == "OBSCURED"
