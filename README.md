@@ -35,6 +35,7 @@ interface for sending HTTP requests with observability features out-of-the-box.
     - [5. Obscuring Sensitive Data](#5-obscuring-sensitive-data)
       - [i. Request Log Record Obscurer](#i-request-log-record-obscurer)
       - [ii. Response Log Record Obscurer](#ii-response-log-record-obscurer)
+      - [iii. Activating The Log Record Obscurer In Your Own Custom Logging Hooks](#iii-activating-the-log-record-obscurer-in-your-own-custom-logging-hooks)
   - [HTTP Log Record Structure](#http-log-record-structure)
   - [Contributing](#contributing)
     - [Prerequisites](#prerequisites)
@@ -386,7 +387,7 @@ logging_http_client.create().get('https://www.python.org')
 
 #### iii. Customizing the logging level
 
-By default, the library provided logging hooks will log at the 'INFO' level. To adjust this, 
+By default, the library provided logging hooks will log at the `INFO` level. To adjust this, 
 you can specify the desired level as an integer per Python log level setting conventions:
 
 ```python
