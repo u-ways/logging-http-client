@@ -43,7 +43,7 @@ def set_request_log_record_obscurers(obscurers: List[RequestLogRecordObscurerTyp
 
     NOTE:
       - The obscurers are applicable to hooks that utilize the `http_log_record.HttpLogRecord`
-        data structure, and which call the `http_log_record.HttpLogRecord.request_processor`
+        data structure, and which call the `http_log_record.HttpLogRecord.from_request`
         method to generate the log record within the logging hook.
       - The obscurers will run on the log record JUST BEFORE it is logged by the
         request logger. When using the request obscurer, you are also responsible
@@ -63,7 +63,7 @@ def set_response_log_record_obscurers(obscurers: List[ResponseLogRecordObscurerT
 
     NOTE:
       - The obscurers are applicable to hooks that utilise the `http_log_record.HttpLogRecord`
-        data structure, and which call the `http_log_record.HttpLogRecord.response_processor`
+        data structure, and which call the `http_log_record.HttpLogRecord.from_response`
         method to generate the log record within the logging hook.
       - The obscurers will run on the log record JUST BEFORE it is logged by the
         response logger. When using the response obscurer, you are also responsible

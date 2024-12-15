@@ -406,3 +406,45 @@ def test_client_should_support_traceability(wiremock_server, caplog):
         ), f"Expected request correlation id to be a valid UUID, but got {reqeust_correlation_id}"
     else:
         pytest.fail("Request log does not contain 'http' record attribute")
+
+
+def test_client_should_run_obscurers_on_a_custom_hook_when_http_log_record_processor_is_used(wiremock_server, caplog):
+    def custom_request_logging_hook(logger: logging.Logger, request: PreparedRequest):
+        logger.debug(
+            "Custom request logging for %s",
+            request.url,
+            # IMPORTANT: Usage of this static method will automatically apply the obscurers for you.
+            extra=HttpLogRecord.from_request(request),
+        )
+
+    def first_request_obscurer(record: HttpLogRecord) -> HttpLogRecord:
+        if record.request_headers.get("Authorization"):
+            record.request_headers["Authorization"] = "Bearer ****"
+        return record
+
+    def second_request_obscurer(record: HttpLogRecord) -> HttpLogRecord:
+        if record.request_body:
+            record.request_body = "OBSCURED_BODY"
+        return record
+
+    logging_http_client.enable_request_body_logging()
+    logging_http_client.set_request_logging_hooks([custom_request_logging_hook])
+    logging_http_client.set_request_log_record_obscurers([first_request_obscurer, second_request_obscurer])
+
+    wiremock_server.for_endpoint("/secret")
+    with caplog.at_level(logging.DEBUG):
+        logging_http_client.create().post(
+            url=wiremock_server.get_url("/secret"),
+            headers={"accept": "application/json", "Authorization": "Bearer secret"},
+            json={"sensitive": "data"},
+        )
+
+    relevant_logs = [record for record in caplog.records if "Custom request logging for" in record.message]
+    assert len(relevant_logs) == 1, f"Expected 1 request log, found {len(relevant_logs)}"
+
+    request_log = relevant_logs.pop()
+    if hasattr(request_log, "http"):
+        assert "OBSCURED_BODY" in request_log.http.get("request_body")
+        assert "Bearer ****" in request_log.http.get("request_headers").get("Authorization")
+    else:
+        pytest.fail("Request log does not contain 'http' record attribute")

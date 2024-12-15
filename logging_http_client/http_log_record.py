@@ -4,6 +4,7 @@ from typing import Any, Dict, Union
 from requests.models import PreparedRequest, Response
 
 import logging_http_client.logging_http_client_config_globals as config
+from http_headers import X_SOURCE_HEADER, X_REQUEST_ID_HEADER
 
 # Define Primitive type
 Primitive = Union[int, float, str, bool]
@@ -37,11 +38,11 @@ class HttpLogRecord(BaseLogRecord):
     response_body: str = ""
 
     @staticmethod
-    def request_processor(source_system: str, request_id: str, request: PreparedRequest) -> Dict[str, Any]:
+    def from_request(request: PreparedRequest) -> Dict[str, Any]:
         record = HttpLogRecord()
 
-        record.request_id = request_id
-        record.request_source = source_system
+        record.request_id = request.headers.get(X_REQUEST_ID_HEADER, None)
+        record.request_source = request.headers.get(X_SOURCE_HEADER, None)
         record.request_method = request.method
         record.request_url = request.url
         record.request_query_params = request.params if hasattr(request, "params") else {}
@@ -59,10 +60,10 @@ class HttpLogRecord(BaseLogRecord):
         return {"http": record.to_dict()}
 
     @staticmethod
-    def response_processor(request_id: str, response: Response) -> Dict[str, Any]:
+    def from_response(response: Response) -> Dict[str, Any]:
         record = HttpLogRecord()
 
-        record.request_id = request_id
+        record.request_id = response.request.headers.get(X_REQUEST_ID_HEADER, None)
         record.response_status = response.status_code
         record.response_headers = dict(response.headers) if response.headers else {}
         record.response_duration_ms = int(response.elapsed.microseconds // 1000)
