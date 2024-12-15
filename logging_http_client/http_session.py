@@ -6,7 +6,7 @@ from requests import Session, Response, Request, PreparedRequest
 from typing_extensions import override
 
 import logging_http_client.logging_http_client_config_globals as config
-from http_headers import X_REQUEST_ID_HEADER, X_CORRELATION_ID_HEADER, X_SOURCE_HEADER
+from logging_http_client.http_headers import X_REQUEST_ID_HEADER, X_CORRELATION_ID_HEADER, X_SOURCE_HEADER
 
 
 class LoggingSession(Session):

@@ -4,7 +4,7 @@ from typing import Any, Dict, Union
 from requests.models import PreparedRequest, Response
 
 import logging_http_client.logging_http_client_config_globals as config
-from http_headers import X_SOURCE_HEADER, X_REQUEST_ID_HEADER
+from logging_http_client.http_headers import X_SOURCE_HEADER, X_REQUEST_ID_HEADER
 
 # Define Primitive type
 Primitive = Union[int, float, str, bool]
