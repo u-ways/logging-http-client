@@ -45,6 +45,7 @@ interface for sending HTTP requests with observability features out-of-the-box.
 ## Background
 
 The [requests](https://pypi.org/project/requests/) library is a popular library for sending HTTP requests in Python. 
+
 However, it does not provide adequate observability features out of the box such as tracing and logging. This means 
 developers might be inclined to write their own custom traceability wrappers or logging utilities when writing code that 
 deals with requests. As such, this library serves as a drop-in replacement to the requests library that takes an 
