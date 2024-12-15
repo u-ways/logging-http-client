@@ -45,11 +45,12 @@ interface for sending HTTP requests with observability features out-of-the-box.
 ## Background
 
 The [requests](https://pypi.org/project/requests/) library is a popular library for sending HTTP requests in Python. 
-However, it does not provide adequate observability features out of the box such as tracing and logging. As such, 
-this library was built to decorate the requests library API to provide these opinionated features for common use 
-cases.
+However, it does not provide adequate observability features out of the box such as tracing and logging. This means 
+developers might be inclined to write their own custom traceability wrappers or logging utilities when writing code that 
+deals with requests. As such, this library serves as a drop-in replacement to the requests library that takes an 
+opinionated approach to provide you with common observability features out-of-the-box.
 
-For example, by simply using this library for your requests, the following will be appended to your logs:
+For example, by simply using this library for your requests, the following will be logged:
 
 ```python
 import logging
@@ -265,8 +266,8 @@ default logging behaviour with your own logging logic. Here is how you can apply
 #### i. Request Logging Hook
 
 The request logging hook is called **before** the request is sent. It gives you access to the client logger, and
-the [prepared request](https://requests.readthedocs.io/en/latest/user/advanced/#prepared-requests) object. You can
-use this hook to log the request before it's sent.
+the [prepared request](https://requests.readthedocs.io/en/latest/user/advanced/#prepared-requests) object. You can use 
+this hook to log the request before it's sent.
 
 ```python
 import logging
@@ -277,10 +278,10 @@ import logging_http_client
 
 
 def custom_request_logging_hook(logger: logging.Logger, request: PreparedRequest):
-    logger.debug("Custom request logging for %s", request.url)
+  logger.debug("Custom request logging for %s", request.url)
 
 
-logging_http_client.set_custom_request_logging_hook(custom_request_logging_hook)
+logging_http_client.set_request_logging_hooks([custom_request_logging_hook])
 
 logging_http_client.create().get('https://www.python.org')
 
@@ -288,10 +289,33 @@ logging_http_client.create().get('https://www.python.org')
 #    { message { "Custom request logging for https://www.python.org" } }
 ```
 
+It's worth noting that setting the logging hooks list applies a replace operation. As such, if you want to keep the 
+default logging hooks you will need to append them in your list, i.e.
+
+```python
+import logging
+
+from requests import PreparedRequest
+
+import logging_http_client
+from logging_http_client import default_request_logging_hook
+
+
+def custom_request_logging_hook(logger: logging.Logger, request: PreparedRequest):
+  logger.debug("Custom request logging for %s", request.url)
+
+
+logging_http_client.set_request_logging_hooks(
+  [default_request_logging_hook, custom_request_logging_hook]
+)
+```
+
+The hooks will be called in the order they are provided. Each hook will receive an IMMUTABLE request object.
+
 #### ii. Response Logging Hook
 
 The response logging hook is called **after** the response is received. It gives you access to the client logger, and
-the [response object](https://requests.readthedocs.io/en/latest/api/#requests.Response). You can use this hook to log
+the [response object](https://requests.readthedocs.io/en/latest/api/#requests.Response). You can use this hook to log 
 the response after it's received.
 
 ```python
@@ -303,16 +327,25 @@ import logging_http_client
 
 
 def custom_response_logging_hook(logger: logging.Logger, response: Response):
-    logger.debug("Custom response logging for %s", response.url)
+  logger.debug("Custom response logging for %s", response.url)
 
 
-logging_http_client.set_custom_response_logging_hook(custom_response_logging_hook)
+def custom_response_logging_hook_2(logger: logging.Logger, response: Response):
+  logger.debug("Another custom response logging for %s", response.url)
+
+
+logging_http_client.set_response_logging_hooks(
+  [custom_response_logging_hook, custom_response_logging_hook_2]
+)
 
 logging_http_client.create().get('https://www.python.org')
 
-# => Log record will include:
+# => Log records will include:
 #    { message { "Custom response logging for https://www.python.org" } }
+#    { message { "Another custom response logging for https://www.python.org" } }
 ```
+
+The hooks will be called in the order they are provided. Each hook will receive an IMMUTABLE request object.
 
 ### 4. Default Logging Configurations
 
@@ -352,11 +385,23 @@ logging_http_client.create().get('https://www.python.org')
 
 #### iii. Customizing the logging level
 
-By default, the library logs at the 'INFO' level. To adjust this, use the set_logging_level method. You can specify the desired level as either an integer (10, 20, 30, 40, 50) or a string ("INFO", "DEBUG", etc.).
+By default, the library provided logging hooks will log at the 'INFO' level. To adjust this, 
+you can specify the desired level as an integer per Python log level setting conventions:
+
 ```python
+import logging
+
 import logging_http_client
 
-logging_http_client.set_logging_level(logging_http_client.LogLevel.DEBUG)
+"""
+CRITICAL = 50
+ERROR    = 40
+WARNING  = 30
+INFO     = 20
+DEBUG    = 10
+NOTSET   = 0
+"""
+logging_http_client.set_default_hooks_logging_level(logging.DEBUG)
 
 logging_http_client.create().get('https://www.python.org')
 # => Logs will be recorded at the DEBUG level now.
@@ -369,7 +414,7 @@ want to log the request or response body but want to obscure sensitive data such
 
 #### i. Request Log Record Obscurer
 
-You can set a request log record obscurer by calling the `set_request_log_record_obscurer` method. The obscurer
+You can set a request log record obscurer by calling the `set_request_log_record_obscurers` method. The obscurer
 function should take a `HttpLogRecord` object and expects to return a modified `HttpLogRecord` object. The obscurer
 function will be called JUST BEFORE the request is logged.
 
@@ -379,17 +424,17 @@ from logging_http_client import HttpLogRecord
 
 
 def request_log_record_obscurer(record: HttpLogRecord) -> HttpLogRecord:
-    record.request_method = "REDACTED"
-    if record.request_headers.get("Authorization") is not None:
-        record.request_headers["Authorization"] = "****"
-    return record
+  record.request_method = "REDACTED"
+  if record.request_headers.get("Authorization") is not None:
+    record.request_headers["Authorization"] = "****"
+  return record
 
 
-logging_http_client.set_request_log_record_obscurer(request_log_record_obscurer)
+logging_http_client.set_request_log_record_obscurers([request_log_record_obscurer])
 
 logging_http_client.create().get(
-    url='https://www.python.org',
-    headers={"Authorization": "Bearer SOME-SECRET-TOKEN"}
+  url='https://www.python.org',
+  headers={"Authorization": "Bearer SOME-SECRET-TOKEN"}
 )
 
 # => Log record will include:
@@ -398,7 +443,7 @@ logging_http_client.create().get(
 
 #### ii. Response Log Record Obscurer
 
-Likewise, you can set a response log record obscurer by calling the `set_response_log_record_obscurer` method.
+Likewise, you can set a response log record obscurer by calling the `set_response_log_record_obscurers` method.
 The obscurer function should take a `HttpLogRecord` object and expects to return a modified `HttpLogRecord` object.
 
 ```python
@@ -407,13 +452,13 @@ from logging_http_client import HttpLogRecord
 
 
 def response_log_record_obscurer(record: HttpLogRecord) -> HttpLogRecord:
-    record.response_status = 999
-    if record.response_body is not None:
-        record.response_body = record.response_body.replace("SENSITIVE", "****")
-    return record
+  record.response_status = 999
+  if record.response_body is not None:
+    record.response_body = record.response_body.replace("SENSITIVE", "****")
+  return record
 
 
-logging_http_client.set_response_log_record_obscurer(response_log_record_obscurer)
+logging_http_client.set_response_log_record_obscurers([response_log_record_obscurer])
 logging_http_client.enable_response_body_logging()
 
 logging_http_client.create().get('https://www.python.org')
@@ -421,6 +466,65 @@ logging_http_client.create().get('https://www.python.org')
 
 # => Log record will include:
 #    { http { response_status: 999, response_body: "some response body with **** information", ... } }
+```
+
+#### iii. Activating The Log Record Obscurer In Your Own Custom Logging Hooks
+
+It's important to know that obscurers are applicable to hooks that utilize the `http_log_record.HttpLogRecord`
+data structure, AND which call the `HttpLogRecord.from_request` method (or `HttpLogRecord.from_response` for 
+response obscurers) to generate the log record within the logging hook. 
+
+Also, much like the logging hooks, you can provide multiple obscurers. They will run in the order they are provided, 
+and they're accumulative. This means that the output of the first obscurer will be passed to the next obscurer, 
+and so on.
+
+Here is a comprehensive example of a custom logging hook that correctly uses `HttpLogRecord.from_request` to apply 
+obscurers without having to manually run them yourself:
+
+```python
+import logging
+import logging_http_client
+
+from requests import PreparedRequest
+from logging_http_client import HttpLogRecord
+
+
+def custom_request_logging_hook(logger: logging.Logger, request: PreparedRequest):
+  logger.debug(
+    "Custom request logging for %s",
+    request.url,
+    # IMPORTANT: Usage of this static method will automatically apply the obscurers for you.
+    extra=HttpLogRecord.from_request(request)
+  )
+
+
+def first_request_obscurer(record: HttpLogRecord) -> HttpLogRecord:
+  if record.request_headers.get("Authorization"):
+    record.request_headers["Authorization"] = "Bearer ****"
+  return record
+
+
+def second_request_obscurer(record: HttpLogRecord) -> HttpLogRecord:
+  if record.request_body:
+    record.request_body = "OBSCURED_BODY"
+  return record
+
+
+logging_http_client.enable_request_body_logging()
+logging_http_client.set_request_logging_hooks([custom_request_logging_hook])
+logging_http_client.set_request_log_record_obscurers([first_request_obscurer, second_request_obscurer])
+
+root_logger = logging.getLogger()
+root_logger.setLevel(level=logging.DEBUG)
+
+client = logging_http_client.create(logger=root_logger)
+client.post(
+  url="https://www.python.org",
+  headers={"accept": "application/json", "Authorization": "Bearer secret"},
+  json={"sensitive": "data"},
+)
+# => Log record will include:
+#    { http { 'request_headers': { 'Authorization': 'Bearer ****', ... }, 'request_body': 'OBSCURED_BODY', ... }
 ```
 
 ## HTTP Log Record Structure
