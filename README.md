@@ -35,7 +35,7 @@ interface for sending HTTP requests with observability features out-of-the-box.
     - [5. Obscuring Sensitive Data](#5-obscuring-sensitive-data)
       - [i. Request Log Record Obscurer](#i-request-log-record-obscurer)
       - [ii. Response Log Record Obscurer](#ii-response-log-record-obscurer)
-      - [iii. Activating The Log Record Obscurer In Your Own Custom Logging Hooks](#iii-activating-the-log-record-obscurer-in-your-own-custom-logging-hooks)
+      - [iii. Activating Obscurers In Your Own Logging Hooks](#iii-activating-obscurers-in-your-own-logging-hooks)
   - [HTTP Log Record Structure](#http-log-record-structure)
   - [Contributing](#contributing)
     - [Prerequisites](#prerequisites)
@@ -470,7 +470,7 @@ logging_http_client.create().get('https://www.python.org')
 #    { http { response_status: 999, response_body: "some response body with **** information", ... } }
 ```
 
-#### iii. Activating The Log Record Obscurer In Your Own Custom Logging Hooks
+#### iii. Activating Obscurers In Your Own Logging Hooks
 
 It's important to know that obscurers are applicable to hooks that utilize the `http_log_record.HttpLogRecord`
 data structure, AND which call the `HttpLogRecord.from_request` method (or `HttpLogRecord.from_response` for 
