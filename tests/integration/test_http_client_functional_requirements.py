@@ -24,6 +24,35 @@ def test_client_returns_correct_response_details(wiremock_server):
     assert response.headers["content-type"] == "application/json"
 
 
+def test_client_should_raise_timeout_error_on_request_timeout(wiremock_server):
+    wiremock_server.for_endpoint("/create", method=HttpMethods.POST, return_status=201, fixed_delay_ms=1500)
+
+    with pytest.raises(Timeout):
+        logging_http_client.create().post(
+            url=wiremock_server.get_url("/create"),
+            timeout=1,
+        )
+
+
+@pytest.mark.parametrize("http_method", [HttpMethods.GET, HttpMethods.POST, HttpMethods.PUT, HttpMethods.DELETE])
+def test_client_does_not_raise_exception_for_expected_optional_arguments(wiremock_server, http_method):
+    wiremock_server.for_endpoint("/create", method=http_method, return_status=201, return_body='{ "message": "done!" }')
+
+    optional_arguments = {
+        key: None
+        for key in inspect.signature(Session.request).parameters.keys()
+        if key not in ["self", "method", "url", "headers"]
+    }
+
+    request_func = getattr(logging_http_client.create(), http_method.lower())
+
+    request_func(
+        url=wiremock_server.get_url("/create"),
+        headers={"accept": "application/json"},
+        **optional_arguments,
+    )
+
+
 def test_client_should_log_request_details_by_default(wiremock_server, caplog):
     wiremock_server.for_endpoint("/some_endpoint")
 
@@ -377,32 +406,3 @@ def test_client_should_support_traceability(wiremock_server, caplog):
         ), f"Expected request correlation id to be a valid UUID, but got {reqeust_correlation_id}"
     else:
         pytest.fail("Request log does not contain 'http' record attribute")
-
-
-def test_client_should_raise_timeout_error_on_request_timeout(wiremock_server):
-    wiremock_server.for_endpoint("/create", method=HttpMethods.POST, return_status=201, fixed_delay_ms=1500)
-
-    with pytest.raises(Timeout):
-        logging_http_client.create().post(
-            url=wiremock_server.get_url("/create"),
-            timeout=1,
-        )
-
-
-@pytest.mark.parametrize("http_method", [HttpMethods.GET, HttpMethods.POST, HttpMethods.PUT, HttpMethods.DELETE])
-def test_client_does_not_raise_exception_for_expected_optional_arguments(wiremock_server, http_method):
-    wiremock_server.for_endpoint("/create", method=http_method, return_status=201, return_body='{ "message": "done!" }')
-
-    optional_arguments = {
-        key: None
-        for key in inspect.signature(Session.request).parameters.keys()
-        if key not in ["self", "method", "url", "headers"]
-    }
-
-    request_func = getattr(logging_http_client.create(), http_method.lower())
-
-    request_func(
-        url=wiremock_server.get_url("/create"),
-        headers={"accept": "application/json"},
-        **optional_arguments,
-    )
