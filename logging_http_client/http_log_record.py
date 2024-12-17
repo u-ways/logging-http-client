@@ -1,5 +1,6 @@
 from dataclasses import dataclass, asdict
 from typing import Any, Dict, Union
+from urllib.parse import urlparse
 
 from requests.models import PreparedRequest, Response
 
@@ -26,12 +27,13 @@ class BaseLogRecord:
 @dataclass
 class HttpLogRecord(BaseLogRecord):
     request_id: str = ""
-    request_source: str = "UNKNOWN"
+    request_source: str = ""
     request_method: str = ""
     request_url: str = ""
     request_query_params: Dict[str, Any] = None
     request_headers: Dict[str, Any] = None
     request_body: str = ""
+    response_source: str = None
     response_status: int = 0
     response_headers: Dict[str, Any] = None
     response_duration_ms: int = 0
@@ -42,7 +44,7 @@ class HttpLogRecord(BaseLogRecord):
         record = HttpLogRecord()
 
         record.request_id = request.headers.get(X_REQUEST_ID_HEADER, None)
-        record.request_source = request.headers.get(X_SOURCE_HEADER, None)
+        record.request_source = request.headers.get(X_SOURCE_HEADER, "UNKNOWN")
         record.request_method = request.method
         record.request_url = request.url
         record.request_query_params = request.params if hasattr(request, "params") else {}
@@ -64,9 +66,16 @@ class HttpLogRecord(BaseLogRecord):
         record = HttpLogRecord()
 
         record.request_id = response.request.headers.get(X_REQUEST_ID_HEADER, None)
+        record.response_source = response.headers.get(X_SOURCE_HEADER, None)
         record.response_status = response.status_code
         record.response_headers = dict(response.headers) if response.headers else {}
         record.response_duration_ms = int(response.elapsed.microseconds // 1000)
+
+        if record.response_source is None:
+            try:
+                record.response_source = urlparse(response.request.url).netloc
+            except ValueError:
+                record.response_source = "UNKNOWN"
 
         if response.content and config.is_response_body_logging_enabled():
             record.response_body = response.content.decode()
