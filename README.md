@@ -544,6 +544,7 @@ object passed to the logger's `extra` keyword argument. The log records are stru
     "request_query_params": "<query_params>",
     "request_headers": "<headers>",
     "request_body": "<body>",
+    "response_source": "<source>",
     "response_status": "<status>",
     "response_headers": "<headers>",
     "response_duration_ms": "<duration>",
@@ -551,6 +552,11 @@ object passed to the logger's `extra` keyword argument. The log records are stru
   }
 }
 ```
+
+The `request_id` is a UUID generated for each request, and it's attached to both the request and the response log 
+records. The `request_source` is collected form the request's `x-source` header, if it's not set, it will be `UNKNOWN`.
+Likewise, the `response_source` is collected from the response's `x-source` header, but if it's not set, it will be 
+collected from the `request_url` host (and port) values instead.
 
 If any of those top-level fields are `None`, `{}`, `[]`, `""`, `0`, or `0.0`,
 they will be omitted from the log record for brevity purposes.
